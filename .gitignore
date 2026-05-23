@@ -55,6 +55,9 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/
 
+# Claude Code local config (rutas y permisos locales, no compartir)
+.claude/settings.local.json
+
 # VS Code
 .vscode/
 
