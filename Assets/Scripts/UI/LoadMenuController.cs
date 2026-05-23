@@ -8,7 +8,7 @@ public class LoadMenuController : MonoBehaviour
 
     void OnEnable()
     {
-        _mainMenu = FindFirstObjectByType<MainMenuController>();
+        _mainMenu = FindAnyObjectByType<MainMenuController>();
         RefreshSlots();
     }
 

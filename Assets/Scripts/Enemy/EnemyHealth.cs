@@ -10,6 +10,8 @@ public class EnemyHealth : MonoBehaviour
 
     public int currentHP;
 
+    private EnemyHealthBar _healthBar;
+
     void Start()
     {
         if (data == null)
@@ -19,6 +21,7 @@ public class EnemyHealth : MonoBehaviour
             return;
         }
         currentHP = data.maxHP;
+        _healthBar = GetComponentInChildren<EnemyHealthBar>(true);
     }
 
     public void TakeDamage(int amount)
@@ -26,11 +29,12 @@ public class EnemyHealth : MonoBehaviour
         if (amount <= 0) return;
 
         currentHP -= amount;
+        currentHP = Mathf.Max(currentHP, 0);
+
+        _healthBar?.UpdateBar(currentHP, data.maxHP);
+
         if (currentHP <= 0)
-        {
-            currentHP = 0;
             Die();
-        }
     }
 
     private void Die()
