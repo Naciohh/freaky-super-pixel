@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   displayName: Esqueleto
   isBoss: 0
-  maxHP: 100
+  maxHP: 340
   damage: 40
   moveSpeed: 1.8
   attackCooldown: 1.5

@@ -6,6 +6,7 @@ public class PlayerCombat : MonoBehaviour
 {
     [Header("Ataque")]
     [SerializeField] private float attackRange = 1.5f;
+    [SerializeField] private float snapRotationRange = 6f;   // radio para buscar enemigo más cercano al atacar
     [SerializeField] private int playerDamage = 34;
     [SerializeField] private float attackCooldown = 0.6f;
     [SerializeField] private LayerMask enemyLayer;
@@ -46,6 +47,7 @@ public class PlayerCombat : MonoBehaviour
 
     private void Attack()
     {
+        SnapToNearestEnemy();
         playerMovement?.TriggerAnimation("Slash");
         Vector3 origin = transform.position + transform.forward * (attackRange * 0.5f);
         Collider[] hits = Physics.OverlapSphere(origin, attackRange, enemyLayer);
@@ -54,6 +56,29 @@ public class PlayerCombat : MonoBehaviour
             EnemyHealth eh = hit.GetComponent<EnemyHealth>();
             if (eh != null)
                 eh.TakeDamage(playerDamage);
+        }
+    }
+
+    /// <summary>Rota instantáneamente hacia el enemigo más cercano dentro de snapRotationRange.</summary>
+    private void SnapToNearestEnemy()
+    {
+        Collider[] nearby = Physics.OverlapSphere(transform.position, snapRotationRange, enemyLayer);
+        if (nearby.Length == 0) return;
+
+        Transform closest = null;
+        float minDist = float.MaxValue;
+        foreach (var col in nearby)
+        {
+            float d = Vector3.Distance(transform.position, col.transform.position);
+            if (d < minDist) { minDist = d; closest = col.transform; }
+        }
+
+        if (closest != null)
+        {
+            Vector3 dir = (closest.position - transform.position);
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.001f)
+                transform.rotation = Quaternion.LookRotation(dir.normalized);
         }
     }
 

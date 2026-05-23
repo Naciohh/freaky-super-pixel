@@ -22538,6 +22538,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCombat
   attackRange: 1.5
+  snapRotationRange: 6
   playerDamage: 34
   attackCooldown: 0.6
   enemyLayer:
@@ -92634,11 +92635,11 @@ MonoBehaviour:
     data: {fileID: 11400000, guid: c83327aac29774f4eab21b00a3952ad7, type: 2}
     weight: 10
   player: {fileID: 383402133}
-  maxEnemiesSimultaneous: 15
-  spawnInterval: 3
-  minDistanceFromPlayer: 5
-  spawnAreaCenter: {x: 0, y: 0, z: 0}
-  spawnAreaSize: {x: 20, y: 0, z: 20}
+  maxEnemiesSimultaneous: 12
+  spawnInterval: 2.5
+  minDistanceFromPlayer: 8
+  spawnAreaCenter: {x: -10.83, y: 0, z: -23.51}
+  spawnAreaSize: {x: 80, y: 0, z: 80}
 --- !u!4 &1027242516
 Transform:
   m_ObjectHideFlags: 0
@@ -149442,7 +149443,7 @@ MonoBehaviour:
   collisionOffset: 0.5
   collisionLayers:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 1
 --- !u!1 &2115505732 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4871118883883244214, guid: 5e903552e3ec5c3459d0fa0ca80c84b9, type: 3}
