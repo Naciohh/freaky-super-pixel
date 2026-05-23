@@ -5,12 +5,16 @@ public class EnemyHealth : MonoBehaviour
 {
     public EnemyData data;
 
-    // Static event — subscribers MUST unsubscribe in OnDisable/OnDestroy to avoid leaks across scene loads
+    // Static event
     public static event Action<EnemyHealth> OnAnyEnemyDied;
 
     public int currentHP;
 
     private EnemyHealthBar _healthBar;
+    private EnemyAI _enemyAI;
+    private Animator _anim;
+
+    private bool isDead = false;
 
     void Start()
     {
@@ -20,26 +24,58 @@ public class EnemyHealth : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
         currentHP = data.maxHP;
+
         _healthBar = GetComponentInChildren<EnemyHealthBar>(true);
+
+        _enemyAI = GetComponent<EnemyAI>();
+
+        _anim = GetComponent<Animator>();
     }
 
     public void TakeDamage(int amount)
     {
-        if (amount <= 0) return;
+        if (amount <= 0 || isDead) return;
 
         currentHP -= amount;
+
         currentHP = Mathf.Max(currentHP, 0);
 
         _healthBar?.UpdateBar(currentHP, data.maxHP);
 
         if (currentHP <= 0)
+        {
             Die();
+        }
     }
 
     private void Die()
     {
+        if (isDead) return;
+
+        isDead = true;
+
+        // detener IA
+        if (_enemyAI != null)
+        {
+            _enemyAI.isAIActive = false;
+        }
+
+        // detener animaciones actuales
+        if (_anim != null)
+        {
+            _anim.SetBool("isWalking", false);
+            _anim.SetBool("isAttacking", false);
+
+            // trigger muerte
+            _anim.SetTrigger("Die");
+        }
+
+        // evento global
         OnAnyEnemyDied?.Invoke(this);
-        Destroy(gameObject);
+
+        // destruir enemigo después animación
+        Destroy(gameObject, 3f);
     }
 }

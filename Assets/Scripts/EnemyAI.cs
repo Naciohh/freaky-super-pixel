@@ -12,6 +12,7 @@ public class EnemyAI : MonoBehaviour
 
     public bool isAttacking { get; private set; }
     public bool isAIActive = true;
+    private bool isDead = false;
 
     private Animator anim;
     private PlayerHealth playerHealth;
@@ -94,4 +95,29 @@ public class EnemyAI : MonoBehaviour
         if (playerHealth != null)
             playerHealth.TakeDamage(data.damage);
     }
+public void Die()
+{
+    if (isDead) return;
+
+    isDead = true;
+
+    isAIActive = false;
+    isAttacking = false;
+
+    StopAllCoroutines();
+
+    if (anim != null)
+    {
+        anim.SetBool("isWalking", false);
+        anim.SetBool("isAttacking", false);
+
+        // animación de muerte
+        anim.SetTrigger("Die");
+    }
+
+    // destruir enemigo después de 3 segundos
+    Destroy(gameObject, 3f);
+}
+
+
 }
