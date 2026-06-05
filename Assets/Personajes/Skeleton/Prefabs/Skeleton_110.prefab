@@ -665,6 +665,13 @@ MonoBehaviour:
   player: {fileID: 0}
   data: {fileID: 11400000, guid: 378d7c6eb797a454cb592a6efdba53ca, type: 2}
   attackDistance: 2
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 1024
+  groundRayHeight: 2
+  groundCheckDistance: 5
+  groundOffset: 0
+  attackWhoosh: {fileID: 0}
   isAIActive: 1
 --- !u!136 &2629716662266545417
 CapsuleCollider:

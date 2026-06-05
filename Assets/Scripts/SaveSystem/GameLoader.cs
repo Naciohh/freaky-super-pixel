@@ -7,7 +7,8 @@ public class GameLoader : MonoBehaviour
         var save = GameSession.PendingSave;
         if (save == null) return;
 
-        transform.position = new Vector3(save.posX, save.posY, save.posZ);
+        // Ignorar posY guardada: dejar que la gravedad lo apoye en el piso.
+        transform.position = new Vector3(save.posX, transform.position.y, save.posZ);
 
         var ph = GetComponent<PlayerHealth>();
         if (ph != null)

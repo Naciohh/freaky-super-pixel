@@ -24,17 +24,27 @@ public class CameraFollow : MonoBehaviour
         float distance =
             Vector3.Distance(target.position, desiredPosition);
 
-        RaycastHit hit;
-
-        if (Physics.Raycast(
+        // Buscar obstaculos entre el jugador y la camara, ignorando al propio
+        // jugador (y sus hijos) para que la camara no se pegue sobre el target.
+        RaycastHit[] hits = Physics.RaycastAll(
             target.position,
             direction,
-            out hit,
             distance,
-            collisionLayers))
+            collisionLayers,
+            QueryTriggerInteraction.Ignore);
+
+        float closest = distance;
+        foreach (var h in hits)
         {
-            desiredPosition =
-                hit.point - direction * collisionOffset;
+            if (h.collider.transform == target ||
+                h.collider.transform.IsChildOf(target))
+                continue;
+
+            if (h.distance < closest)
+            {
+                closest = h.distance;
+                desiredPosition = h.point - direction * collisionOffset;
+            }
         }
 
         transform.position = Vector3.Lerp(
