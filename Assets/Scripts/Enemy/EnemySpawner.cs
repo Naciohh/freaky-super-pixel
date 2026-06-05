@@ -60,7 +60,7 @@ public class EnemySpawner : MonoBehaviour
 
     public void DestroyAllNormalEnemies()
     {
-        EnemyHealth[] all = FindObjectsByType<EnemyHealth>(FindObjectsInactive.Exclude);
+        EnemyHealth[] all = FindObjectsByType<EnemyHealth>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         foreach (var e in all)
         {
             if (e != null && e.data != null && !e.data.isBoss)
