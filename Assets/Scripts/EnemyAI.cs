@@ -10,6 +10,14 @@ public class EnemyAI : MonoBehaviour
     [Header("Config")]
     public float attackDistance = 2f;
 
+    [Header("Suelo / Gravedad")]
+    public LayerMask groundMask = ~0;          // capas consideradas "piso"
+    public float groundRayHeight = 2f;          // desde cuánto arriba se lanza el rayo
+    public float groundCheckDistance = 5f;      // cuánto se busca hacia abajo
+    public float groundOffset = 0f;             // ajuste fino sobre el piso
+
+    private float feetOffset;                    // distancia pies-pivote (se calcula solo)
+
     [Header("Audio")]
     public AudioClip attackWhoosh;
 
@@ -44,6 +52,24 @@ public class EnemyAI : MonoBehaviour
         playerHealth = player != null ? player.GetComponent<PlayerHealth>() : null;
 
         transform.localScale = Vector3.one * data.modelScale;
+
+        ComputeFeetOffset();
+    }
+
+    // Calcula la distancia entre el pivote y los pies visuales del modelo,
+    // para poder apoyarlo exactamente sobre el piso sin que se hunda ni flote.
+    private void ComputeFeetOffset()
+    {
+        var rends = GetComponentsInChildren<Renderer>(true);
+        bool found = false;
+        Bounds b = new Bounds();
+        foreach (var r in rends)
+        {
+            if (!(r is MeshRenderer || r is SkinnedMeshRenderer)) continue;
+            if (!found) { b = r.bounds; found = true; }
+            else b.Encapsulate(r.bounds);
+        }
+        feetOffset = found ? (b.min.y - transform.position.y) : 0f;
     }
 
     void Update()
@@ -53,7 +79,9 @@ public class EnemyAI : MonoBehaviour
 
         float distance = Vector3.Distance(transform.position, player.position);
 
-        transform.LookAt(player);
+        // Mirar al jugador sin inclinarse cuando está a otra altura.
+        Vector3 lookTarget = new Vector3(player.position.x, transform.position.y, player.position.z);
+        transform.LookAt(lookTarget);
 
         if (distance < attackDistance)
         {
@@ -75,11 +103,30 @@ public class EnemyAI : MonoBehaviour
 
             anim.SetBool("isWalking", true);
 
+            // Moverse solo en el plano horizontal hacia el jugador (sin seguir su altura).
+            Vector3 target = new Vector3(player.position.x, transform.position.y, player.position.z);
             transform.position = Vector3.MoveTowards(
                 transform.position,
-                player.position,
+                target,
                 data.moveSpeed * Time.deltaTime
             );
+        }
+
+        // Gravedad / pegado al piso: ajusta la altura al terreno real bajo el enemigo.
+        SnapToGround();
+    }
+
+    private void SnapToGround()
+    {
+        Vector3 origin = transform.position + Vector3.up * groundRayHeight;
+
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit,
+                groundRayHeight + groundCheckDistance, groundMask, QueryTriggerInteraction.Ignore))
+        {
+            Vector3 pos = transform.position;
+            // Apoyar los pies visuales sobre el piso (restando el offset pies-pivote).
+            pos.y = hit.point.y - feetOffset + groundOffset;
+            transform.position = pos;
         }
     }
 
