@@ -43,6 +43,15 @@ public class TransformationMode : MonoBehaviour
         }
     }
 
+    // Restaura el estado de transformación desde un guardado.
+    public void RestoreState(int savedParryCount, bool wasTransformed)
+    {
+        parryCount = Mathf.Clamp(savedParryCount, 0, parriesToTransform);
+
+        if (wasTransformed && transformCoroutine == null)
+            transformCoroutine = StartCoroutine(TransformRoutine());
+    }
+
     private void HandleParrySuccess()
     {
         if (isTransformed) return;
