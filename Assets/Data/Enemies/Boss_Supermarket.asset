@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   displayName: Jefe del Super
   isBoss: 1
-  maxHP: 500
+  maxHP: 1000
   damage: 60
   moveSpeed: 2
-  attackCooldown: 0.8
+  attackCooldown: 3
   modelScale: 2
   bossAttackType: 0

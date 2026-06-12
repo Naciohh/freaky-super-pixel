@@ -20,6 +20,9 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField] private AudioClip hitSound;
     [SerializeField] private AudioClip noHitSound;
 
+    [Header("FX")]
+    [SerializeField] private GameObject parrySparksPrefab;
+
     public static event Action OnParrySuccess;
 
     private float nextAttackTime = 0f;
@@ -72,6 +75,14 @@ public class PlayerCombat : MonoBehaviour
             if (enemyHealth != null)
             {
                 enemyHealth.TakeDamage(playerDamage);
+                hitEnemy = true;
+            }
+
+            BossBearHealth bossHealth = hit.GetComponent<BossBearHealth>();
+
+            if (bossHealth != null)
+            {
+                bossHealth.TakeDamage(playerDamage);
                 hitEnemy = true;
             }
         }
@@ -157,6 +168,16 @@ public class PlayerCombat : MonoBehaviour
 
                         if (other != null)
                             other.Stun(stunDuration);
+                    }
+
+                    // CHISPAS DEL PARRY
+                    if (parrySparksPrefab != null)
+                    {
+                        Instantiate(
+                            parrySparksPrefab,
+                            transform.position + Vector3.up,
+                            Quaternion.identity
+                        );
                     }
 
                     playerMovement?.TriggerAnimation("Parry");
