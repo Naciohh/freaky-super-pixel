@@ -70,7 +70,7 @@ public class PlayerCombat : MonoBehaviour
 
         foreach (var hit in hits)
         {
-            EnemyHealth enemyHealth = hit.GetComponent<EnemyHealth>();
+            EnemyHealth enemyHealth = hit.GetComponentInParent<EnemyHealth>();
 
             if (enemyHealth != null)
             {
@@ -78,7 +78,7 @@ public class PlayerCombat : MonoBehaviour
                 hitEnemy = true;
             }
 
-            BossBearHealth bossHealth = hit.GetComponent<BossBearHealth>();
+            BossBearHealth bossHealth = hit.GetComponentInParent<BossBearHealth>();
 
             if (bossHealth != null)
             {
@@ -158,27 +158,32 @@ public class PlayerCombat : MonoBehaviour
 
             foreach (var col in nearby)
             {
-                EnemyAI ai = col.GetComponent<EnemyAI>();
+                EnemyAI ai = col.GetComponentInParent<EnemyAI>();
 
                 if (ai != null && ai.isAttacking)
                 {
                     foreach (var c in nearby)
                     {
-                        EnemyAI other = c.GetComponent<EnemyAI>();
+                        EnemyAI other = c.GetComponentInParent<EnemyAI>();
 
                         if (other != null)
+                        {
                             other.Stun(stunDuration);
+                        }
                     }
 
-                    // CHISPAS DEL PARRY
                     if (parrySparksPrefab != null)
                     {
-                        Instantiate(
-                            parrySparksPrefab,
-                            transform.position + Vector3.up,
-                            Quaternion.identity
-                        );
+                        GameObject fx = Instantiate(
+                        parrySparksPrefab,
+                        new Vector3(0, 5, 0),
+                        Quaternion.identity
+                    );
+
+                        Debug.Log("FX creado: " + fx.name);
                     }
+
+                    Debug.Log("PARRY OK");
 
                     playerMovement?.TriggerAnimation("Parry");
 
@@ -196,7 +201,7 @@ public class PlayerCombat : MonoBehaviour
         isParrying = false;
     }
 
-    void OnDrawGizmosSelected()
+    private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
 
