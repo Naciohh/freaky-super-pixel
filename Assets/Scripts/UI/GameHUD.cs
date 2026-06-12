@@ -20,7 +20,7 @@ public class GameHUD : MonoBehaviour
     public GameObject bossHealthBarGroup;
     public Image bossHealthBar;
 
-    private EnemyHealth bossEnemyHealth;
+    private BossController bossCtrl;
 
     void OnEnable()
     {
@@ -36,12 +36,10 @@ public class GameHUD : MonoBehaviour
     {
         if (waveTimerText != null) waveTimerText.gameObject.SetActive(false);
 
-        BossController boss = FindAnyObjectByType<BossController>();
-        if (boss != null)
-        {
-            bossEnemyHealth = boss.GetComponent<EnemyHealth>();
-            if (bossHealthBarGroup != null) bossHealthBarGroup.SetActive(true);
-        }
+        // Incluye inactivos: el boss aún puede estar desactivado en este instante.
+        bossCtrl = FindAnyObjectByType<BossController>(FindObjectsInactive.Include);
+        if (bossCtrl != null && bossHealthBarGroup != null)
+            bossHealthBarGroup.SetActive(true);
     }
 
     void Update()
@@ -55,7 +53,7 @@ public class GameHUD : MonoBehaviour
         if (waveManager != null && waveTimerText != null && waveManager.WaveActive)
             waveTimerText.text = Mathf.CeilToInt(waveManager.TimeRemaining).ToString();
 
-        if (bossEnemyHealth != null && bossHealthBar != null && bossEnemyHealth.data != null)
-            bossHealthBar.fillAmount = (float)bossEnemyHealth.currentHP / bossEnemyHealth.data.maxHP;
+        if (bossCtrl != null && bossHealthBar != null && bossCtrl.MaxHP > 0)
+            bossHealthBar.fillAmount = (float)bossCtrl.CurrentHP / bossCtrl.MaxHP;
     }
 }

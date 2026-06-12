@@ -62,6 +62,7 @@ public class PauseMenuManager : MonoBehaviour
         if (pausePanel     != null) pausePanel.SetActive(true);
         _isPaused      = true;
         Time.timeScale = 0f;
+        MusicManager.Instance?.PauseMusic();
     }
 
     public void Resume()
@@ -69,23 +70,13 @@ public class PauseMenuManager : MonoBehaviour
         _isPaused = false;
         if (pausePanel != null) pausePanel.SetActive(false);
         Time.timeScale = 1f;
+        MusicManager.Instance?.ResumeMusic();
     }
 
     public void Guardar()
     {
-        var player = GameObject.FindWithTag("Player");
-        var ph     = player != null ? player.GetComponent<PlayerHealth>() : null;
-
-        var data = new SaveData
-        {
-            sceneName     = SceneManager.GetActiveScene().name,
-            posX          = player != null ? player.transform.position.x : 0f,
-            posY          = player != null ? player.transform.position.y : 0f,
-            posZ          = player != null ? player.transform.position.z : 0f,
-            currentHealth = ph     != null ? ph.currentHealth : 100,
-        };
-
-        SaveManager.Save(saveSlot, data);
+        // Captura TODO el estado (jugador, oleada, stats, boss, enemigos).
+        SaveManager.Save(saveSlot, GameSnapshot.Capture());
         StartCoroutine(ShowSaveConfirm());
     }
 

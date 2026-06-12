@@ -46,4 +46,13 @@ public class GameStats : MonoBehaviour
     private void OnParry() => ParriesPerformed++;
 
     public void StopTracking() => tracking = false;
+
+    // Restaura las stats desde un guardado y reanuda el conteo de tiempo.
+    public void RestoreState(int kills, int parries, float time)
+    {
+        EnemiesKilled    = kills;
+        ParriesPerformed = parries;
+        TimeElapsed      = time;
+        tracking         = true;
+    }
 }

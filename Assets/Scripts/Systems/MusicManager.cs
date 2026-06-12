@@ -54,6 +54,19 @@ public class MusicManager : MonoBehaviour
         if (bossClip != null) CrossfadeTo(bossClip);
     }
 
+    // Pausa/reanuda la música conservando el punto exacto de reproducción.
+    public void PauseMusic()
+    {
+        sourceA.Pause();
+        sourceB.Pause();
+    }
+
+    public void ResumeMusic()
+    {
+        sourceA.UnPause();
+        sourceB.UnPause();
+    }
+
     private void PlayClip(AudioClip clip)
     {
         activeSource.clip = clip;

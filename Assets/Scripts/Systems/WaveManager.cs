@@ -17,8 +17,12 @@ public class WaveManager : MonoBehaviour
     public float TimeRemaining { get; private set; }
     public bool WaveActive { get; private set; }
 
+    private bool _restored;
+
     void Start()
     {
+        // Si venimos de un guardado, el restore (GameLoader) arranca la oleada/boss.
+        if (GameSession.PendingSave != null || _restored) return;
         StartWave();
     }
 
@@ -63,5 +67,32 @@ public class WaveManager : MonoBehaviour
         spawner?.DestroyAllNormalEnemies();
         OnWaveEnd?.Invoke();
         bossController?.Activate();
+    }
+
+    // --- Restauración desde guardado ---
+
+    // Retoma la oleada con el tiempo restante guardado.
+    public void RestoreWave(float remaining)
+    {
+        _restored = true;
+        if (spawner == null) spawner = FindAnyObjectByType<EnemySpawner>();
+        if (bossController == null) bossController = FindAnyObjectByType<BossController>(FindObjectsInactive.Include);
+
+        TimeRemaining = Mathf.Max(remaining, 0f);
+        WaveActive = true;
+        spawner?.StartSpawning();
+        OnWaveStart?.Invoke();
+        StartCoroutine(WaveCountdown());
+    }
+
+    // Restaura la partida ya en fase de boss (la oleada terminó).
+    public void RestoreBossPhase()
+    {
+        _restored = true;
+        if (spawner == null) spawner = FindAnyObjectByType<EnemySpawner>();
+
+        WaveActive = false;
+        spawner?.StopSpawning();
+        OnWaveEnd?.Invoke();   // el HUD muestra la barra del boss; el boss lo activa el restore
     }
 }

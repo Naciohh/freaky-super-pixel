@@ -104,6 +104,45 @@ public class EnemySpawner : MonoBehaviour
         activeEnemies++;
     }
 
+    // Re-instancia los enemigos guardados en su posición y con su HP.
+    public void RestoreEnemies(List<EnemySaveData> saved)
+    {
+        if (saved == null) return;
+
+        foreach (var s in saved)
+        {
+            EnemySpawnEntry entry = FindEntry(s.dataName);
+            if (entry == null || entry.prefab == null) continue;
+
+            Vector3 pos = new Vector3(s.posX, s.posY, s.posZ);
+            GameObject go = Instantiate(entry.prefab, pos, Quaternion.identity);
+
+            EnemyHealth eh = go.GetComponent<EnemyHealth>();
+            if (eh != null)
+            {
+                eh.data = entry.data;
+                eh.restoreHP = s.currentHP;
+            }
+
+            EnemyAI ai = go.GetComponent<EnemyAI>();
+            if (ai != null)
+            {
+                ai.data = entry.data;
+                ai.player = player;
+            }
+
+            activeEnemies++;
+        }
+    }
+
+    private EnemySpawnEntry FindEntry(string dataName)
+    {
+        if (enemyTypes == null) return null;
+        foreach (var e in enemyTypes)
+            if (e.data != null && e.data.name == dataName) return e;
+        return null;
+    }
+
     private Vector3 GetRandomSpawnPosition()
     {
         Vector3 pos;

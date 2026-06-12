@@ -10,6 +10,10 @@ public class EnemyAI : MonoBehaviour
     [Header("Config")]
     public float attackDistance = 2f;
 
+    [Header("Separación (anti-encimado)")]
+    public float separationRadius = 1.4f;     // radio para detectar enemigos pegados
+    public float separationStrength = 1.5f;   // empuje entre sí (menor que moveSpeed para que igual avancen)
+
     [Header("Suelo / Gravedad")]
     public LayerMask groundMask = ~0;          // capas consideradas "piso"
     public float groundRayHeight = 2f;          // desde cuánto arriba se lanza el rayo
@@ -112,8 +116,46 @@ public class EnemyAI : MonoBehaviour
             );
         }
 
+        // Evitar que los enemigos se encimen unos con otros.
+        ApplySeparation();
+
         // Gravedad / pegado al piso: ajusta la altura al terreno real bajo el enemigo.
         SnapToGround();
+    }
+
+    // Empuja al enemigo lejos de otros enemigos cercanos (separación tipo boids).
+    private void ApplySeparation()
+    {
+        if (separationStrength <= 0f)
+            return;
+
+        Vector3 push = Vector3.zero;
+        int mask = 1 << gameObject.layer;
+
+        Collider[] hits = Physics.OverlapSphere(
+            transform.position, separationRadius, mask, QueryTriggerInteraction.Ignore);
+
+        foreach (var h in hits)
+        {
+            // Ignorar los propios colliders de este enemigo.
+            if (h.GetComponentInParent<EnemyAI>() == this)
+                continue;
+
+            Vector3 diff = transform.position - h.transform.position;
+            diff.y = 0f;
+            float d = diff.magnitude;
+
+            if (d > 0.0001f && d < separationRadius)
+                push += diff.normalized * (1f - d / separationRadius);
+        }
+
+        // Topear el empuje: con muchos vecinos no debe superar al avance hacia el jugador,
+        // si no los enemigos se frenan en "fila" en vez de seguir acercándose.
+        if (push.sqrMagnitude > 1f)
+            push.Normalize();
+
+        if (push.sqrMagnitude > 0.0001f)
+            transform.position += push * (separationStrength * Time.deltaTime);
     }
 
     private void SnapToGround()

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 public class PlayerCombat : MonoBehaviour
 {
@@ -9,11 +10,13 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField] private float snapRotationRange = 6f;
     [SerializeField] private int playerDamage = 34;
     [SerializeField] private float attackCooldown = 0.6f;
+    [SerializeField] private float attackWindup = 0.35f;   // demora hasta que el brazo baja y conecta el golpe
     [SerializeField] private LayerMask enemyLayer;
 
     [Header("Parry")]
     [SerializeField] private float parryWindow = 0.4f;
-    [SerializeField] private float parryRange = 2.5f;
+    [SerializeField] private float parryRange = 2.5f;          // radio para detectar el ataque a parar
+    [SerializeField] private float parryStunRadius = 5f;       // radio (360°) de enemigos afectados por el stun
     [SerializeField] private float stunDuration = 2f;
 
     [Header("Audio")]
@@ -22,6 +25,7 @@ public class PlayerCombat : MonoBehaviour
 
     [Header("FX")]
     [SerializeField] private GameObject parrySparksPrefab;
+    [SerializeField] private float parrySparksScale = 0.3f;   // achica el flash (el prefab sale enorme)
 
     public static event Action OnParrySuccess;
 
@@ -62,6 +66,14 @@ public class PlayerCombat : MonoBehaviour
 
         playerMovement?.TriggerAnimation("Slash");
 
+        // El golpe (detección + daño + sonido) se resuelve recién cuando el brazo baja.
+        StartCoroutine(ResolveAttack());
+    }
+
+    private IEnumerator ResolveAttack()
+    {
+        yield return new WaitForSeconds(attackWindup);
+
         Vector3 origin = transform.position + transform.forward * (attackRange * 0.5f);
 
         Collider[] hits = Physics.OverlapSphere(origin, attackRange, enemyLayer);
@@ -82,6 +94,7 @@ public class PlayerCombat : MonoBehaviour
 
             if (bossHealth != null)
             {
+                Debug.Log($"[PlayerCombat] Golpe al boss -> HP={bossHealth.currentHP}, vulnerable={bossHealth.isVulnerable}");
                 bossHealth.TakeDamage(playerDamage);
                 hitEnemy = true;
             }
@@ -156,49 +169,78 @@ public class PlayerCombat : MonoBehaviour
                 enemyLayer
             );
 
+            bool attackerInRange = false;
+
             foreach (var col in nearby)
             {
                 EnemyAI ai = col.GetComponentInParent<EnemyAI>();
+                if (ai != null && ai.isAttacking) { attackerInRange = true; break; }
 
-                if (ai != null && ai.isAttacking)
+                BossBearAI boss = col.GetComponentInParent<BossBearAI>();
+                if (boss != null && boss.isAttacking) { attackerInRange = true; break; }
+            }
+
+            if (attackerInRange)
+            {
+                // Afecta a TODOS los enemigos alrededor (360°), no solo a los de adelante.
+                Collider[] around = Physics.OverlapSphere(transform.position, parryStunRadius, enemyLayer);
+
+                HashSet<EnemyAI> stunned = new HashSet<EnemyAI>();
+                HashSet<BossBearHealth> vulnerables = new HashSet<BossBearHealth>();
+
+                foreach (var c in around)
                 {
-                    foreach (var c in nearby)
+                    EnemyAI other = c.GetComponentInParent<EnemyAI>();
+                    if (other != null && stunned.Add(other))
                     {
-                        EnemyAI other = c.GetComponentInParent<EnemyAI>();
-
-                        if (other != null)
-                        {
-                            other.Stun(stunDuration);
-                        }
+                        other.Stun(stunDuration);
+                        SpawnFlashAt(other.transform.position + Vector3.up * 1.2f);
                     }
 
-                    if (parrySparksPrefab != null)
+                    BossBearHealth bossHealth = c.GetComponentInParent<BossBearHealth>();
+                    if (bossHealth != null && vulnerables.Add(bossHealth))
                     {
-                        GameObject fx = Instantiate(
-                        parrySparksPrefab,
-                        new Vector3(0, 5, 0),
-                        Quaternion.identity
-                    );
-
-                        Debug.Log("FX creado: " + fx.name);
+                        bossHealth.BecomeVulnerable();
+                        SpawnFlashAt(bossHealth.transform.position + Vector3.up * 3f);
                     }
-
-                    Debug.Log("PARRY OK");
-
-                    playerMovement?.TriggerAnimation("Parry");
-
-                    isParrying = false;
-
-                    OnParrySuccess?.Invoke();
-
-                    yield break;
                 }
+
+                Debug.Log("PARRY OK");
+
+                playerMovement?.TriggerAnimation("Parry");
+
+                isParrying = false;
+
+                OnParrySuccess?.Invoke();
+
+                yield break;
             }
 
             yield return null;
         }
 
         isParrying = false;
+    }
+
+    private void SpawnFlashAt(Vector3 pos)
+    {
+        if (parrySparksPrefab == null)
+            return;
+
+        GameObject fx = Instantiate(parrySparksPrefab, pos, Quaternion.identity);
+        fx.transform.localScale = Vector3.one * parrySparksScale;
+
+        // El prefab tiene Play On Awake desactivado: hay que arrancarlo a mano.
+        ParticleSystem ps = fx.GetComponentInChildren<ParticleSystem>();
+        if (ps != null)
+        {
+            var main = ps.main;
+            main.startLifetime = 0.15f;   // destello bien corto, no un sprite fijo
+            main.startSpeed = 8f;          // las chispas salen disparadas (sensación de flash)
+            ps.Play(true);
+        }
+
+        Destroy(fx, 1f);
     }
 
     private void OnDrawGizmosSelected()
