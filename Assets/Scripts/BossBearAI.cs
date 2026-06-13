@@ -10,6 +10,9 @@ public class BossBearAI : MonoBehaviour
     [Header("Config")]
     public float attackDistance = 2f;
 
+    // Demora desde que arranca el ataque hasta que conecta el golpe (ventana de parry).
+    [SerializeField] private float attackHitDelay = 0.5f;
+
     [Header("Suelo / Gravedad")]
     public LayerMask groundMask = ~0;
     public float groundRayHeight = 2f;
@@ -23,6 +26,9 @@ public class BossBearAI : MonoBehaviour
 
     public bool isAttacking { get; private set; }
     public bool isAIActive = true;
+
+    // True solo durante el windup de un golpe: el parry solo cuenta contra un golpe real.
+    public bool HasPendingStrike { get; private set; }
 
     private bool isDead = false;
 
@@ -183,14 +189,23 @@ public class BossBearAI : MonoBehaviour
 
     private IEnumerator DealDamage()
     {
+        // El golpe está "cargando": acá es cuando se puede parar con un parry.
+        HasPendingStrike = true;
+
         if (audioSource != null && attackWhoosh != null)
         {
             audioSource.PlayOneShot(attackWhoosh);
         }
 
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(attackHitDelay);
+
+        HasPendingStrike = false;
 
         if (this == null)
+            yield break;
+
+        // Si fue parado con un parry durante el windup, el golpe se cancela.
+        if (!isAIActive)
             yield break;
 
         if (playerHealth != null)
@@ -208,6 +223,7 @@ public class BossBearAI : MonoBehaviour
 
         isAIActive = false;
         isAttacking = false;
+        HasPendingStrike = false;
 
         StopAllCoroutines();
 

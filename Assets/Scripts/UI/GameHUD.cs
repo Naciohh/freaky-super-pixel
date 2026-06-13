@@ -22,6 +22,35 @@ public class GameHUD : MonoBehaviour
 
     private BossController bossCtrl;
 
+    void Awake()
+    {
+        // Un Image con tipo 'Filled' pero SIN Source Image ignora por completo
+        // fillAmount: Unity lo dibuja siempre como un rectángulo lleno. Estas barras
+        // estaban sin sprite, por eso el valor bajaba pero visualmente no se movían.
+        // Les asignamos el sprite de UI por defecto de Unity para que el relleno funcione.
+        EnsureFillSprite(playerHealthBar);
+        EnsureFillSprite(transformBar);
+        EnsureFillSprite(bossHealthBar);
+    }
+
+    private static Sprite _fillSprite;
+
+    private static void EnsureFillSprite(Image img)
+    {
+        if (img == null || img.sprite != null)
+            return;
+
+        // Sprite blanco generado en runtime (Texture2D.whiteTexture siempre existe).
+        // No dependemos de recursos built-in del editor, que pueden no estar disponibles.
+        if (_fillSprite == null)
+        {
+            Texture2D tex = Texture2D.whiteTexture;
+            _fillSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+        }
+
+        img.sprite = _fillSprite;
+    }
+
     void OnEnable()
     {
         WaveManager.OnWaveEnd += OnWaveEnd;

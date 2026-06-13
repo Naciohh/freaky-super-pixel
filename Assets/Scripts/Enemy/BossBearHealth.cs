@@ -17,6 +17,10 @@ public class BossBearHealth : MonoBehaviour
     public bool isVulnerable = true;
     public float vulnerableDuration = 5f;
 
+    // Multiplica el daño recibido durante la ventana vulnerable, para que cada
+    // "castigo" tras un parry recorte la barra de forma claramente visible.
+    [Min(1f)] public float vulnerableDamageMultiplier = 3f;
+
     [Header("Feedback vulnerable")]
     public Color vulnerableTint = new Color(1f, 0.35f, 0.35f, 1f);
 
@@ -64,11 +68,16 @@ public class BossBearHealth : MonoBehaviour
 
         // EL BOSS SOLO RECIBE DAÑO CUANDO ES VULNERABLE
         if (!isVulnerable)
+        {
+            Debug.Log($"[BossBearHealth] Golpe IGNORADO (no vulnerable). HP={currentHP}/{data.maxHP}");
             return;
+        }
 
-        currentHP -= amount;
+        int dmg = Mathf.RoundToInt(amount * vulnerableDamageMultiplier);
 
-        currentHP = Mathf.Max(currentHP, 0);
+        currentHP = Mathf.Max(currentHP - dmg, 0);
+
+        Debug.Log($"[BossBearHealth] Daño {dmg} aplicado (x{vulnerableDamageMultiplier}). HP={currentHP}/{data.maxHP}");
 
         _healthBar?.UpdateBar(currentHP, data.maxHP);
 
@@ -103,9 +112,11 @@ public class BossBearHealth : MonoBehaviour
             _anim.SetBool("isStunned", true);
         }
 
-        Debug.Log("BOSS VULNERABLE");
+        Debug.Log($"[BossBearHealth] >>> BOSS VULNERABLE durante {vulnerableDuration}s (pegale ahora)");
 
         yield return new WaitForSeconds(vulnerableDuration);
+
+        Debug.Log("[BossBearHealth] <<< Fin de ventana vulnerable");
 
         // Recupera: deja de estar aturdido y vuelve a atacar.
         if (_anim != null) _anim.SetBool("isStunned", false);
