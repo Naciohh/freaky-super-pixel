@@ -58,6 +58,25 @@ public class PlayerCombat : MonoBehaviour
         {
             StartCoroutine(ParryWindow());
         }
+
+#if UNITY_EDITOR
+        // DEBUG: tecla K -> daña al boss directo (forzando vulnerable) para verificar
+        // que la barra de vida baja. Borrar este bloque cuando se confirme el flujo.
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            var boss = FindAnyObjectByType<BossBearHealth>();
+            if (boss != null)
+            {
+                boss.isVulnerable = true;
+                boss.TakeDamage(100);
+                Debug.Log($"[DEBUG K] Daño directo al boss -> HP={boss.currentHP}");
+            }
+            else
+            {
+                Debug.Log("[DEBUG K] No encontré ningún BossBearHealth activo en la escena.");
+            }
+        }
+#endif
     }
 
     private void Attack()
@@ -174,10 +193,10 @@ public class PlayerCombat : MonoBehaviour
             foreach (var col in nearby)
             {
                 EnemyAI ai = col.GetComponentInParent<EnemyAI>();
-                if (ai != null && ai.isAttacking) { attackerInRange = true; break; }
+                if (ai != null && ai.HasPendingStrike) { attackerInRange = true; break; }
 
                 BossBearAI boss = col.GetComponentInParent<BossBearAI>();
-                if (boss != null && boss.isAttacking) { attackerInRange = true; break; }
+                if (boss != null && boss.HasPendingStrike) { attackerInRange = true; break; }
             }
 
             if (attackerInRange)

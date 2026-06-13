@@ -10,6 +10,11 @@ public class EnemyAI : MonoBehaviour
     [Header("Config")]
     public float attackDistance = 2f;
 
+    // Demora desde que arranca el ataque hasta que conecta el golpe.
+    // Es la ventana en la que el ataque se puede parar con un parry. Ajustar para
+    // que coincida con el frame del "slash" de la animación.
+    [SerializeField] private float attackHitDelay = 0.5f;
+
     [Header("Separación (anti-encimado)")]
     public float separationRadius = 1.4f;     // radio para detectar enemigos pegados
     public float separationStrength = 1.5f;   // empuje entre sí (menor que moveSpeed para que igual avancen)
@@ -27,6 +32,10 @@ public class EnemyAI : MonoBehaviour
 
     public bool isAttacking { get; private set; }
     public bool isAIActive = true;
+
+    // True solo durante el windup de un golpe (entre que arranca y conecta).
+    // El parry SOLO debe contar contra un golpe realmente en camino.
+    public bool HasPendingStrike { get; private set; }
 
     private bool isDead = false;
 
@@ -184,6 +193,7 @@ public class EnemyAI : MonoBehaviour
     {
         isAIActive = false;
         isAttacking = false;
+        HasPendingStrike = false;
 
         if (anim != null)
         {
@@ -201,15 +211,24 @@ public class EnemyAI : MonoBehaviour
 
     private IEnumerator DealDamage()
     {
+        // El golpe está "cargando": acá es cuando se puede parar con un parry.
+        HasPendingStrike = true;
+
         // sonido de ataque
         if (audioSource != null && attackWhoosh != null)
         {
             audioSource.PlayOneShot(attackWhoosh);
         }
 
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(attackHitDelay);
+
+        HasPendingStrike = false;
 
         if (this == null)
+            yield break;
+
+        // Si fue aturdido (parry exitoso) durante el windup, el golpe se cancela.
+        if (!isAIActive)
             yield break;
 
         if (playerHealth != null)
@@ -227,6 +246,7 @@ public class EnemyAI : MonoBehaviour
 
         isAIActive = false;
         isAttacking = false;
+        HasPendingStrike = false;
 
         StopAllCoroutines();
 
