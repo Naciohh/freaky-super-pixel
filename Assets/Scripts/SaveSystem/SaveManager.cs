@@ -14,18 +14,12 @@ public static class SaveManager
     {
         if (data == null || slot < 0 || slot >= SlotCount) return;
 
-        var json = JsonUtility.ToJson(new SaveData
-        {
-            sceneName     = data.sceneName,
-            posX          = data.posX,
-            posY          = data.posY,
-            posZ          = data.posZ,
-            currentHealth = data.currentHealth,
-            timestamp     = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
-            slotLabel     = $"Ranura {slot + 1}",
-        }, true);
+        // Serializamos el SaveData completo (con enemigos, oleada, boss, etc.),
+        // solo completando los metadatos.
+        data.timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        data.slotLabel = $"Ranura {slot + 1}";
 
-        File.WriteAllText(SlotPath(slot), json);
+        File.WriteAllText(SlotPath(slot), JsonUtility.ToJson(data, true));
         PlayerPrefs.SetInt(LastSlotKey, slot);
         PlayerPrefs.Save();
     }
