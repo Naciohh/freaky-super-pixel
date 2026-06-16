@@ -10,6 +10,9 @@ public class EnemyHealth : MonoBehaviour
 
     public int currentHP;
 
+    // Si es >= 0, al iniciar usa este HP en vez de maxHP (para restaurar guardados).
+    [HideInInspector] public int restoreHP = -1;
+
     private EnemyHealthBar _healthBar;
     private EnemyAI _enemyAI;
     private Animator _anim;
@@ -25,7 +28,7 @@ public class EnemyHealth : MonoBehaviour
             return;
         }
 
-        currentHP = data.maxHP;
+        currentHP = restoreHP >= 0 ? restoreHP : data.maxHP;
 
         _healthBar = GetComponentInChildren<EnemyHealthBar>(true);
 

@@ -20,7 +20,36 @@ public class GameHUD : MonoBehaviour
     public GameObject bossHealthBarGroup;
     public Image bossHealthBar;
 
-    private EnemyHealth bossEnemyHealth;
+    private BossController bossCtrl;
+
+    void Awake()
+    {
+        // Un Image con tipo 'Filled' pero SIN Source Image ignora por completo
+        // fillAmount: Unity lo dibuja siempre como un rectángulo lleno. Estas barras
+        // estaban sin sprite, por eso el valor bajaba pero visualmente no se movían.
+        // Les asignamos el sprite de UI por defecto de Unity para que el relleno funcione.
+        EnsureFillSprite(playerHealthBar);
+        EnsureFillSprite(transformBar);
+        EnsureFillSprite(bossHealthBar);
+    }
+
+    private static Sprite _fillSprite;
+
+    private static void EnsureFillSprite(Image img)
+    {
+        if (img == null || img.sprite != null)
+            return;
+
+        // Sprite blanco generado en runtime (Texture2D.whiteTexture siempre existe).
+        // No dependemos de recursos built-in del editor, que pueden no estar disponibles.
+        if (_fillSprite == null)
+        {
+            Texture2D tex = Texture2D.whiteTexture;
+            _fillSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+        }
+
+        img.sprite = _fillSprite;
+    }
 
     void OnEnable()
     {
@@ -36,12 +65,10 @@ public class GameHUD : MonoBehaviour
     {
         if (waveTimerText != null) waveTimerText.gameObject.SetActive(false);
 
-        BossController boss = FindAnyObjectByType<BossController>();
-        if (boss != null)
-        {
-            bossEnemyHealth = boss.GetComponent<EnemyHealth>();
-            if (bossHealthBarGroup != null) bossHealthBarGroup.SetActive(true);
-        }
+        // Incluye inactivos: el boss aún puede estar desactivado en este instante.
+        bossCtrl = FindAnyObjectByType<BossController>(FindObjectsInactive.Include);
+        if (bossCtrl != null && bossHealthBarGroup != null)
+            bossHealthBarGroup.SetActive(true);
     }
 
     void Update()
@@ -55,7 +82,7 @@ public class GameHUD : MonoBehaviour
         if (waveManager != null && waveTimerText != null && waveManager.WaveActive)
             waveTimerText.text = Mathf.CeilToInt(waveManager.TimeRemaining).ToString();
 
-        if (bossEnemyHealth != null && bossHealthBar != null && bossEnemyHealth.data != null)
-            bossHealthBar.fillAmount = (float)bossEnemyHealth.currentHP / bossEnemyHealth.data.maxHP;
+        if (bossCtrl != null && bossHealthBar != null && bossCtrl.MaxHP > 0)
+            bossHealthBar.fillAmount = (float)bossCtrl.CurrentHP / bossCtrl.MaxHP;
     }
 }
