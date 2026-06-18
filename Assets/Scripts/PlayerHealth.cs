@@ -20,14 +20,12 @@ public class PlayerHealth : MonoBehaviour
     {
         currentHealth = maxHealth;
 
-        // Barra de vida
         if (healthSlider != null)
         {
             healthSlider.maxValue = maxHealth;
             healthSlider.value = currentHealth;
         }
 
-        // Renderer
         meshRenderer = GetComponentInChildren<SkinnedMeshRenderer>();
 
         if (meshRenderer != null)
@@ -35,7 +33,6 @@ public class PlayerHealth : MonoBehaviour
             originalColor = meshRenderer.material.color;
         }
 
-        // Buscar animator en hijos (Normal Form)
         anim = GetComponentInChildren<Animator>();
 
         if (anim != null)
@@ -46,16 +43,10 @@ public class PlayerHealth : MonoBehaviour
         {
             Debug.LogError("NO SE ENCONTRO ANIMATOR");
         }
-           {
-                anim = GetComponentInChildren<Animator>();
-
-                Debug.Log(anim);
-            }
     }
 
     void Update()
     {
-        // TEST
         if (Input.GetKeyDown(KeyCode.H))
         {
             Debug.Log("SE APRETO H");
@@ -73,13 +64,11 @@ public class PlayerHealth : MonoBehaviour
         if (currentHealth < 0)
             currentHealth = 0;
 
-        // Actualizar UI
         if (healthSlider != null)
             healthSlider.value = currentHealth;
 
         Debug.Log("Vida actual: " + currentHealth);
 
-        // Animación de golpe
         if (anim != null)
         {
             Debug.Log("TRIGGER HIT");
@@ -88,7 +77,6 @@ public class PlayerHealth : MonoBehaviour
 
         StartCoroutine(FlashRed());
 
-        // Muerte
         if (currentHealth <= 0)
         {
             Die();
