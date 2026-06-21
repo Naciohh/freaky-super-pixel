@@ -10,7 +10,8 @@ using UnityEngine.UI;
 [RequireComponent(typeof(RectTransform))]
 public class MenuButtonHover : MonoBehaviour,
     IPointerEnterHandler, IPointerExitHandler,
-    IPointerDownHandler,  IPointerUpHandler
+    IPointerDownHandler,  IPointerUpHandler,
+    ISelectHandler,       IDeselectHandler
 {
     [Header("Escala")]
     [SerializeField] private float hoverScale = 1.07f;
@@ -63,7 +64,14 @@ public class MenuButtonHover : MonoBehaviour,
             _bg.color = Color.Lerp(_bg.color, _targetColor, dt * animSpeed);
     }
 
-    public void OnPointerEnter(PointerEventData _)
+    public void OnPointerEnter(PointerEventData _) => Hover();
+    public void OnPointerExit(PointerEventData _)  => Unhover();
+
+    // Joystick: la selección del EventSystem dispara el mismo feedback que el mouse.
+    public void OnSelect(BaseEventData _)   => Hover();
+    public void OnDeselect(BaseEventData _) => Unhover();
+
+    private void Hover()
     {
         _isHovered   = true;
         _targetScale = _baseScale * hoverScale;
@@ -71,7 +79,7 @@ public class MenuButtonHover : MonoBehaviour,
         _controller?.PlayHover();
     }
 
-    public void OnPointerExit(PointerEventData _)
+    private void Unhover()
     {
         _isHovered   = false;
         _targetScale = _baseScale;

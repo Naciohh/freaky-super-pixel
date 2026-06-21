@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -53,6 +54,24 @@ public class PlayerMovement : MonoBehaviour
     // movimiento. La W/A/S/D siguen moviendolo en world space como siempre.
     void HandleAiming()
     {
+        // Twin-stick: si se mueve el stick derecho del joystick, Emilio apunta con él.
+        Gamepad gp = Gamepad.current;
+        if (gp != null)
+        {
+            Vector2 r = gp.rightStick.ReadValue();
+            if (r.sqrMagnitude > 0.09f)   // deadzone ~0.3
+            {
+                Vector3 stickAim = CameraRelative(r);
+                if (stickAim.sqrMagnitude > 0.001f)
+                {
+                    aimDirection = stickAim.normalized;
+                    RotateTowards(aimDirection);
+                }
+                return;
+            }
+        }
+
+        // Fallback: apuntado con el mouse (como siempre).
         if (aimCamera == null) return;
 
         // Plano horizontal a la altura del jugador.
@@ -68,8 +87,23 @@ public class PlayerMovement : MonoBehaviour
         if (lookDir.sqrMagnitude < 0.001f) return;
 
         aimDirection = lookDir.normalized;
+        RotateTowards(aimDirection);
+    }
 
-        Quaternion targetRotation = Quaternion.LookRotation(lookDir);
+    // Convierte el input del stick (x=derecha, y=arriba) a una dirección en el piso
+    // relativa a la cámara: "arriba" del stick = hacia adentro de la pantalla.
+    private Vector3 CameraRelative(Vector2 input)
+    {
+        Vector3 f = aimCamera != null ? aimCamera.transform.forward : Vector3.forward;
+        Vector3 r = aimCamera != null ? aimCamera.transform.right   : Vector3.right;
+        f.y = 0f; r.y = 0f;
+        f.Normalize(); r.Normalize();
+        return r * input.x + f * input.y;
+    }
+
+    private void RotateTowards(Vector3 dir)
+    {
+        Quaternion targetRotation = Quaternion.LookRotation(dir);
         transform.rotation = Quaternion.Slerp(
             transform.rotation,
             targetRotation,
@@ -87,8 +121,17 @@ public class PlayerMovement : MonoBehaviour
         if (Input.GetKey(KeyCode.W)) v += 1f;
         if (Input.GetKey(KeyCode.S)) v -= 1f;
 
-        Vector3 move = new Vector3(h, 0f, v).normalized;
-        bool isMoving = move.magnitude > 0.01f;
+        // Stick izquierdo del joystick (se suma al WASD; conserva la magnitud analógica).
+        Gamepad gp = Gamepad.current;
+        if (gp != null)
+        {
+            Vector2 l = gp.leftStick.ReadValue();
+            if (l.sqrMagnitude > 0.02f) { h += l.x; v += l.y; }
+        }
+
+        Vector3 move = new Vector3(h, 0f, v);
+        if (move.sqrMagnitude > 1f) move.Normalize();   // clamp a 1 sin matar el analógico
+        bool isMoving = move.sqrMagnitude > 0.01f;
 
         GetCurrentAnimator().SetBool("IsMoving", isMoving);
 

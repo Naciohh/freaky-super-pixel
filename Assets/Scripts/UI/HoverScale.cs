@@ -6,7 +6,9 @@ using UnityEngine.EventSystems;
 /// tamaño normal al salir. Usa tiempo no escalado para funcionar con
 /// Time.timeScale = 0 (p.ej. en la pantalla de Game Over).
 /// </summary>
-public class HoverScale : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class HoverScale : MonoBehaviour,
+    IPointerEnterHandler, IPointerExitHandler,
+    ISelectHandler, IDeselectHandler
 {
     public float hoverScale = 1.12f;
     public float speed = 12f;
@@ -22,6 +24,10 @@ public class HoverScale : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     public void OnPointerEnter(PointerEventData eventData) => target = baseScale * hoverScale;
     public void OnPointerExit(PointerEventData eventData) => target = baseScale;
+
+    // Joystick: la selección del EventSystem dispara el mismo hover que el mouse.
+    public void OnSelect(BaseEventData eventData) => target = baseScale * hoverScale;
+    public void OnDeselect(BaseEventData eventData) => target = baseScale;
 
     void Update()
     {

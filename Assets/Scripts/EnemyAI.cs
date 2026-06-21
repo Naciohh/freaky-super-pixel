@@ -43,6 +43,11 @@ public class EnemyAI : MonoBehaviour
     private PlayerHealth playerHealth;
     private AudioSource audioSource;
 
+    // Algunos modelos (ej. el oso minion, que reusa el animator del boss) animan el
+    // ataque con el trigger "Attack" en vez del bool "isAttacking". Cacheamos qué tiene.
+    private bool _hasAttackBool;
+    private bool _hasAttackTrigger;
+
     private float nextAttackTime = 0f;
     private Coroutine stunCoroutine;
 
@@ -65,6 +70,9 @@ public class EnemyAI : MonoBehaviour
 
         if (anim == null)
             Debug.LogWarning($"[EnemyAI] No Animator found on {gameObject.name}.", this);
+
+        _hasAttackBool    = anim != null && anim.HasParameterOfType("isAttacking", AnimatorControllerParameterType.Bool);
+        _hasAttackTrigger = anim != null && anim.HasParameterOfType("Attack", AnimatorControllerParameterType.Trigger);
 
         audioSource = GetComponent<AudioSource>();
 
@@ -108,19 +116,22 @@ public class EnemyAI : MonoBehaviour
         if (distance < attackDistance)
         {
             anim.SetBool("isWalking", false);
-            anim.SetBool("isAttacking", true);
+            if (_hasAttackBool) anim.SetBool("isAttacking", true);
 
             isAttacking = true;
 
             if (Time.time >= nextAttackTime)
             {
+                // El oso minion usa el trigger "Attack" del animator del boss; los
+                // esqueletos usan el bool "isAttacking". Disparamos lo que tenga.
+                if (_hasAttackTrigger) anim.SetTrigger("Attack");
                 StartCoroutine(DealDamage());
                 nextAttackTime = Time.time + data.attackCooldown;
             }
         }
         else
         {
-            anim.SetBool("isAttacking", false);
+            if (_hasAttackBool) anim.SetBool("isAttacking", false);
             isAttacking = false;
 
             anim.SetBool("isWalking", true);

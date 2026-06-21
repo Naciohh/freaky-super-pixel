@@ -8,6 +8,7 @@ public static class GameSnapshot
     {
         var data = new SaveData();
         data.sceneName = SceneManager.GetActiveScene().name;
+        data.difficulty = (int)GameDifficulty.Current;
 
         // --- Jugador ---
         var playerGO = GameObject.FindWithTag("Player");
