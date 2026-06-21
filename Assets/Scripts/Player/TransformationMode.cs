@@ -15,12 +15,12 @@ public class TransformationMode : MonoBehaviour
     [SerializeField] private float auraScale = 1f;
     [Tooltip("Radio del daño de aura alrededor de Freaky.")]
     [SerializeField] private float auraRadius = 3f;
-    [Tooltip("Daño aplicado por tick a los enemigos dentro del aura.")]
+    [Tooltip("Daño por tick en el BORDE del aura (enemigo lejos). Cuanto más cerca está, más daño recibe.")]
     [SerializeField] private int auraDamagePerTick = 25;
+    [Tooltip("Multiplicador de daño cuando el enemigo está pegado a Freaky (centro del aura). Daño en el centro = auraDamagePerTick x esto. En el borde es x1.")]
+    [SerializeField] private float auraDamageCloseMultiplier = 4f;
     [Tooltip("Cada cuánto (seg) el aura aplica daño.")]
     [SerializeField] private float auraTickInterval = 0.5f;
-    [Tooltip("Distancia mínima a la que se mantiene a los enemigos: no pueden acercarse más que esto (los repele para que no lo golpeen). Conviene que sea menor que auraRadius para que igual reciban daño.")]
-    [SerializeField] private float repelRadius = 2.6f;
 
     [Header("Regeneración (modo Freaky)")]
     [Tooltip("Vida que se regenera por tick mientras está transformado.")]
@@ -41,6 +41,13 @@ public class TransformationMode : MonoBehaviour
 
     void Awake()
     {
+        // La dificultad escala cuántos parries hacen falta para transformarse.
+        parriesToTransform = Mathf.Max(1, Mathf.RoundToInt(parriesToTransform * GameDifficulty.ParriesToTransformMult));
+
+        // En dificultades altas el aura pega más fuerte y llega más lejos (x1 en Fácil/Normal).
+        auraDamagePerTick = Mathf.Max(1, Mathf.RoundToInt(auraDamagePerTick * GameDifficulty.AuraDamageMult));
+        auraRadius *= GameDifficulty.AuraRadiusMult;
+
         playerMovement = GetComponent<PlayerMovement>();
         playerCombat = GetComponent<PlayerCombat>();
         playerHealth = GetComponent<PlayerHealth>();
@@ -79,6 +86,10 @@ public class TransformationMode : MonoBehaviour
     {
         if (isTransformed) return;
 
+        // Durante la pelea con el boss, el parry NO acumula transformación: queda bloqueada.
+        // (El parry sigue funcionando para volver vulnerable al oso, eso se resuelve en PlayerCombat.)
+        if (BossBearHealth.IsFightActive) return;
+
         parryCount++;
         if (parryCount >= parriesToTransform)
         {
@@ -102,9 +113,6 @@ public class TransformationMode : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             parryCount = Mathf.RoundToInt(Mathf.Lerp(parriesToTransform, 0, elapsed / transformDuration));
-
-            // Mantiene a los enemigos lejos: no llegan a golpearlo en modo Freaky.
-            RepelEnemies();
 
             // Daño de aura + regeneración de vida, por tick.
             if (Time.time >= nextAuraTick)
@@ -147,64 +155,40 @@ public class TransformationMode : MonoBehaviour
         }
     }
 
+    // Daño por tick a todo lo que esté dentro del aura. Cuanto más cerca del centro,
+    // más daño: de auraDamagePerTick en el borde a auraDamagePerTick*close pegado.
+    // (Ya no se repele a los enemigos: pueden acercarse, pero cerca duele más.)
     private void ApplyAuraDamage()
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, auraRadius);
 
+        HashSet<EnemyHealth> hitEnemies = new HashSet<EnemyHealth>();
+        HashSet<BossBearHealth> hitBosses = new HashSet<BossBearHealth>();
+
         foreach (var c in hits)
         {
             EnemyHealth eh = c.GetComponentInParent<EnemyHealth>();
-            if (eh != null && !eh.data.isBoss)
+            if (eh != null && eh.data != null && !eh.data.isBoss)
             {
-                eh.TakeDamage(auraDamagePerTick);
+                if (hitEnemies.Add(eh))
+                    eh.TakeDamage(AuraDamageAt(eh.transform.position));
                 continue;
             }
 
             BossBearHealth boss = c.GetComponentInParent<BossBearHealth>();
-            if (boss != null)
-                boss.TakeDamage(auraDamagePerTick);
+            if (boss != null && hitBosses.Add(boss))
+                boss.TakeDamage(AuraDamageAt(boss.transform.position));
         }
     }
 
-    // Empuja a los enemigos que se acercan más que repelRadius, para que no lleguen
-    // a la distancia de ataque. No toca al boss (su pelea es aparte).
-    private void RepelEnemies()
+    // Daño del aura según la cercanía: x1 en el borde, xCloseMult pegado a Freaky.
+    private int AuraDamageAt(Vector3 enemyPos)
     {
-        Collider[] hits = Physics.OverlapSphere(transform.position, repelRadius);
-
-        HashSet<Transform> moved = new HashSet<Transform>();
-
-        foreach (var c in hits)
-        {
-            Transform root = null;
-
-            EnemyAI enemy = c.GetComponentInParent<EnemyAI>();
-            if (enemy != null) root = enemy.transform;
-
-            if (root == null)
-            {
-                SpiderAI spider = c.GetComponentInParent<SpiderAI>();
-                if (spider != null) root = spider.transform;
-            }
-
-            // Sin enemigo válido o ya movido (varios colliders por enemigo) -> saltar.
-            if (root == null || !moved.Add(root))
-                continue;
-
-            Vector3 dir = root.position - transform.position;
-            dir.y = 0f;
-
-            // Si está justo encima, lo empuja en una dirección arbitraria.
-            if (dir.sqrMagnitude < 0.0001f)
-                dir = transform.forward;
-
-            dir.Normalize();
-
-            // Lo reubica en el borde del radio de repulsión, conservando su altura.
-            Vector3 target = transform.position + dir * repelRadius;
-            target.y = root.position.y;
-            root.position = target;
-        }
+        Vector3 d = enemyPos - transform.position;
+        d.y = 0f;
+        float t = auraRadius > 0f ? Mathf.Clamp01(1f - d.magnitude / auraRadius) : 1f;
+        float mult = Mathf.Lerp(1f, Mathf.Max(1f, auraDamageCloseMultiplier), t);
+        return Mathf.Max(1, Mathf.RoundToInt(auraDamagePerTick * mult));
     }
 
     void OnDrawGizmosSelected()
@@ -213,12 +197,4 @@ public class TransformationMode : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, auraRadius);
     }
 
-    void OnTriggerEnter(Collider other)
-    {
-        if (!isTransformed) return;
-
-        EnemyHealth eh = other.GetComponent<EnemyHealth>();
-        if (eh != null && !eh.data.isBoss)
-            eh.TakeDamage(99999);
-    }
 }

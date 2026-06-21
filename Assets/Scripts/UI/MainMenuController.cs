@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using TMPro;
 using UnityEngine.UI;
 
@@ -33,6 +34,7 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] private PortalTransition portalTransition;
 
     private bool _isLoading;
+    private DifficultySelectUI _difficultyUI;
 
     private void Start()
     {
@@ -53,11 +55,39 @@ public class MainMenuController : MonoBehaviour
             EventSystem.current.SetSelectedGameObject(firstSelected);
     }
 
+    void Update()
+    {
+        // Volver atrás con el Círculo (buttonEast en PS, B en Xbox): cierra el panel
+        // "Cargar" si está abierto. En el menú raíz no hace nada (no hay a dónde volver).
+        Gamepad gp = Gamepad.current;
+        if (gp != null && gp.buttonEast.wasPressedThisFrame &&
+            loadMenuPanel != null && loadMenuPanel.activeSelf)
+        {
+            CerrarCargar();
+        }
+    }
+
+    // Nuevo Juego abre primero el selector de dificultad (antes del portal).
     public void NuevoJuego()
     {
         if (_isLoading) return;
-        _isLoading = true;
         PlayClick();
+        ShowDifficultySelect();
+    }
+
+    private void ShowDifficultySelect()
+    {
+        if (_difficultyUI == null)
+            _difficultyUI = DifficultySelectUI.Create();
+        _difficultyUI.Show(OnDifficultyChosen, null);
+    }
+
+    // Confirmó una dificultad: la fijamos y entramos como partida nueva.
+    private void OnDifficultyChosen(Difficulty d)
+    {
+        if (_isLoading) return;
+        _isLoading = true;
+        GameDifficulty.Current = d;
         PlayerPrefs.DeleteKey("LastSaveSlot");
         PlayerPrefs.Save();
         EnterGame(gameSceneName);
@@ -72,6 +102,7 @@ public class MainMenuController : MonoBehaviour
         _isLoading = true;
         PlayClick();
         GameSession.PendingSave = save;
+        GameDifficulty.Current = (Difficulty)save.difficulty;
         EnterGame(save.sceneName);
     }
 
@@ -107,6 +138,7 @@ public class MainMenuController : MonoBehaviour
         _isLoading = true;
         PlayClick();
         GameSession.PendingSave = save;
+        GameDifficulty.Current = (Difficulty)save.difficulty;
         StartCoroutine(LoadWithScreen(save.sceneName));
     }
 

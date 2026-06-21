@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -23,9 +24,14 @@ public class PlayerCombat : MonoBehaviour
 
     [Header("Parry")]
     [SerializeField] private float parryWindow = 0.4f;
+    [Tooltip("Tiempo (seg) que hay que esperar entre parry y parry. Ajustable a gusto desde el inspector.")]
+    [SerializeField] private float parryCooldown = 2f;
     [SerializeField] private float parryRange = 2.5f;          // radio para detectar el ataque a parar
     [SerializeField] private float parryStunRadius = 5f;       // radio (360°) de enemigos afectados por el stun
     [SerializeField] private float stunDuration = 2f;
+    [Tooltip("Altura del cartel 'PARRY' sobre el oso, como fracción de su altura (0 = pies, 1 = coronilla). Bajalo si queda muy arriba / tapando la barra de vida.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float bossParryPopupHeightFactor = 0.55f;
 
     [Header("Audio")]
     [SerializeField] private AudioClip hitSound;
@@ -42,6 +48,7 @@ public class PlayerCombat : MonoBehaviour
     public static event Action<Vector3> OnParryHitEnemy;
 
     private float nextAttackTime = 0f;
+    private float nextParryTime = 0f;
     private bool isParrying = false;
 
     private PlayerMovement playerMovement;
@@ -49,10 +56,27 @@ public class PlayerCombat : MonoBehaviour
 
     public bool IsTransforming { get; set; } = false;
 
+    // --- Estado del cooldown de parry (para el HUD) ---
+    public float ParryCooldown => parryCooldown;
+    // Segundos que faltan para poder volver a parryar (0 = listo).
+    public float ParryCooldownRemaining => Mathf.Max(0f, nextParryTime - Time.time);
+    public bool IsParryReady => Time.time >= nextParryTime;
+    // Progreso de recarga 0..1 (0 = recién usado, 1 = listo).
+    public float ParryCooldownProgress =>
+        parryCooldown <= 0f ? 1f : Mathf.Clamp01(1f - ParryCooldownRemaining / parryCooldown);
+
     void Start()
     {
         playerMovement = GetComponent<PlayerMovement>();
         audioSource = GetComponent<AudioSource>();
+
+        // La dificultad escala el cooldown del parry (sobre el valor del Inspector).
+        parryCooldown *= GameDifficulty.ParryCooldownMult;
+
+        // En dificultades altas Emilio pega más fuerte y desde más lejos, para poder
+        // lidiar con la horda (en Fácil/Normal estos multiplicadores son x1).
+        playerDamage = Mathf.Max(1, Mathf.RoundToInt(playerDamage * GameDifficulty.PlayerDamageMult));
+        attackRange *= GameDifficulty.PlayerAttackRangeMult;
     }
 
     void Update()
@@ -67,8 +91,15 @@ public class PlayerCombat : MonoBehaviour
             nextAttackTime = Time.time + attackCooldown;
         }
 
-        if (Input.GetMouseButtonDown(1))
+        // Parry: clic derecho del mouse o R1 (right shoulder) del joystick.
+        bool parryPressed = Input.GetMouseButtonDown(1);
+        Gamepad gp = Gamepad.current;
+        if (gp != null && gp.rightShoulder.wasPressedThisFrame)
+            parryPressed = true;
+
+        if (parryPressed && Time.time >= nextParryTime)
         {
+            nextParryTime = Time.time + parryCooldown;
             StartCoroutine(ParryWindow());
         }
 
@@ -288,19 +319,20 @@ public class PlayerCombat : MonoBehaviour
     }
 
     // El boss es enorme: si el cartel de parry sale a la altura de su base queda
-    // DENTRO de su malla (el ZTest lo tapa) y no se ve. Lo anclamos al tope de sus
-    // renderers para que ParryFeedback lo muestre por encima de su cabeza.
+    // DENTRO de su malla (el ZTest lo tapa) y no se ve, pero anclarlo al tope lo manda
+    // demasiado arriba (tapa la barra de vida). Lo ubicamos a una fracción ajustable de
+    // su altura (bossParryPopupHeightFactor) para dejarlo sobre el cuerpo.
     private Vector3 BossPhotoAnchor(Transform boss)
     {
         var rends = boss.GetComponentsInChildren<Renderer>();
         if (rends.Length == 0)
-            return boss.position + Vector3.up * 6f;
+            return boss.position + Vector3.up * 3f;
 
         Bounds b = rends[0].bounds;
         foreach (var r in rends) b.Encapsulate(r.bounds);
 
         Vector3 p = boss.position;
-        p.y = b.max.y;   // ParryFeedback le suma su propio yOffset por encima
+        p.y = Mathf.Lerp(b.min.y, b.max.y, bossParryPopupHeightFactor);   // ParryFeedback le suma su yOffset por encima
         return p;
     }
 

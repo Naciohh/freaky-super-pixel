@@ -13,9 +13,10 @@ public class SpiderSpawner : MonoBehaviour
     [SerializeField] private float spawnInterval = 4f;        // Cada cuántos segundos sale una
     [SerializeField] private float minDistanceFromPlayer = 4f; // Distancia mínima para que no te aparezca encima
 
-    [Header("Área de Spawn")]
-    [SerializeField] private Vector3 spawnAreaCenter;
-    [SerializeField] private Vector3 spawnAreaSize = new Vector3(10f, 0f, 10f);
+    [Header("Área de spawn (todo el mapa, entre las 4 paredes)")]
+    [Tooltip("Las arañas aparecen en cualquier punto dentro de esta caja, igual que el resto de los enemigos.")]
+    [SerializeField] private Vector3 mapBoundsCenter = new Vector3(-56.5f, 0f, -0.25f);
+    [SerializeField] private Vector3 mapBoundsSize   = new Vector3(280f, 0f, 235f);
 
     private int activeSpiders = 0;
     private bool _bossPhase = false;   // true cuando empieza la pelea del boss (fin de oleada)
@@ -39,6 +40,10 @@ public class SpiderSpawner : MonoBehaviour
 
     void Start()
     {
+        // La dificultad escala cuántas arañas hay a la vez y cada cuánto salen.
+        maxSpidersSimultaneous = Mathf.Max(1, Mathf.RoundToInt(maxSpidersSimultaneous * GameDifficulty.SpawnCountMult));
+        spawnInterval = Mathf.Max(0.2f, spawnInterval * GameDifficulty.SpawnIntervalMult);
+
         StartCoroutine(SpawnLoop());
     }
 
@@ -103,20 +108,22 @@ public class SpiderSpawner : MonoBehaviour
 
     private Vector3 GetRandomSpawnPosition()
     {
-        Vector3 pos;
-        int attempts = 0;
-        do
-        {
-            pos = spawnAreaCenter + new Vector3(
-                Random.Range(-spawnAreaSize.x / 2f, spawnAreaSize.x / 2f),
-                0f,
-                Random.Range(-spawnAreaSize.z / 2f, spawnAreaSize.z / 2f)
-            );
-            attempts++;
-        }
-        while (player != null && Vector3.Distance(pos, player.position) < minDistanceFromPlayer && attempts < 10);
-
+        // Cualquier punto dentro del mapa (entre las 4 paredes), evitando caer
+        // demasiado cerca de Emilio.
+        Vector3 pos = RandomPointInMap();
+        for (int i = 0; i < 12 && player != null &&
+             Vector3.Distance(pos, player.position) < minDistanceFromPlayer; i++)
+            pos = RandomPointInMap();
         return pos;
+    }
+
+    private Vector3 RandomPointInMap()
+    {
+        Vector3 half = mapBoundsSize * 0.5f;
+        return new Vector3(
+            mapBoundsCenter.x + Random.Range(-half.x, half.x),
+            mapBoundsCenter.y,
+            mapBoundsCenter.z + Random.Range(-half.z, half.z));
     }
 
     private void OnSpiderDied(EnemyHealth eh)
@@ -131,7 +138,7 @@ public class SpiderSpawner : MonoBehaviour
     // Dibuja una caja verde en la pestaña Scene para saber dónde van a spawnear
     void OnDrawGizmosSelected()
     {
-        Gizmos.color = new Color(0f, 0.5f, 1f, 0.3f);
-        Gizmos.DrawCube(spawnAreaCenter, spawnAreaSize + Vector3.up * 0.1f);
+        Gizmos.color = new Color(0f, 0.5f, 1f, 0.12f);
+        Gizmos.DrawCube(mapBoundsCenter, mapBoundsSize + Vector3.up * 0.1f);
     }
 }

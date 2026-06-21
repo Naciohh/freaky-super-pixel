@@ -21,6 +21,8 @@ public class PlayerHealth : MonoBehaviour
 
     void Start()
     {
+        // La dificultad escala la vida máxima de Emilio (sobre el valor del Inspector).
+        maxHealth = Mathf.Max(1, Mathf.RoundToInt(maxHealth * GameDifficulty.PlayerMaxHpMult));
         currentHealth = maxHealth;
 
         if (healthSlider != null)
@@ -61,6 +63,10 @@ public class PlayerHealth : MonoBehaviour
     {
         if (isDead)
             return;
+
+        // La dificultad escala el daño que los enemigos le hacen al jugador.
+        // Único chokepoint: cubre EnemyAI, SpiderAI y BossBearAI.
+        damage = Mathf.RoundToInt(damage * GameDifficulty.EnemyDamageMult);
 
         currentHealth -= damage;
 

@@ -10,6 +10,10 @@ public class BossBearAI : MonoBehaviour
     [Header("Config")]
     public float attackDistance = 2f;
 
+    [Header("Velocidad")]
+    [Tooltip("Velocidad de movimiento del oso. Si es > 0, IGNORA la de EnemyData y usa esta (ajustable acá en el inspector). Poné -1 para usar la de EnemyData.")]
+    public float moveSpeedOverride = 5f;
+
     // Demora desde que arranca el ataque hasta que conecta el golpe (ventana de parry).
     [SerializeField] private float attackHitDelay = 0.5f;
 
@@ -131,10 +135,12 @@ public class BossBearAI : MonoBehaviour
                 player.position.z
             );
 
+            float speed = moveSpeedOverride > 0f ? moveSpeedOverride : data.moveSpeed;
+
             transform.position = Vector3.MoveTowards(
                 transform.position,
                 target,
-                data.moveSpeed * Time.deltaTime
+                speed * Time.deltaTime
             );
         }
 

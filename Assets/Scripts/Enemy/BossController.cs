@@ -121,5 +121,9 @@ public class BossController : MonoBehaviour
     public int CurrentHP => bearHealth != null ? bearHealth.currentHP
                           : enemyHealth != null ? enemyHealth.currentHP : 0;
 
-    public int MaxHP => bossData != null ? bossData.maxHP : 1;
+    // Max efectivo (ya escalado por dificultad) del componente de vida que use el
+    // boss, para que la barra de la HUD muestre el porcentaje correcto.
+    public int MaxHP => bearHealth != null ? bearHealth.MaxHP
+                      : enemyHealth != null ? enemyHealth.MaxHPEffective
+                      : bossData != null ? bossData.maxHP : 1;
 }

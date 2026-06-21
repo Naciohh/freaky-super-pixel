@@ -23023,9 +23023,11 @@ MonoBehaviour:
   slashRotationOffset: {x: 90, y: 0, z: 0}
   slashVfxLifetime: 1
   parryWindow: 0.4
+  parryCooldown: 2
   parryRange: 2.5
   parryStunRadius: 5
   stunDuration: 2
+  bossParryPopupHeightFactor: 0.55
   hitSound: {fileID: 8300000, guid: 998746e724ca632478838d63dc25b475, type: 3}
   noHitSound: {fileID: 8300000, guid: 7ab619ed1f755694aafa5cb9222a45b6, type: 3}
   parrySparksPrefab: {fileID: 996211607384450905, guid: fdb02100ecf722d47968c8ea7eb9b9aa, type: 3}
@@ -38651,6 +38653,58 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
+--- !u!1 &735718706
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 735718708}
+  - component: {fileID: 735718707}
+  m_Layer: 0
+  m_Name: BossMinionSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &735718707
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 735718706}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16b1b9730dae7734d9f2a7f20b3def24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossMinionSpawner
+  minionPrefab: {fileID: 2379730512864466893, guid: 6952c09913ad4414faead178a99035bc, type: 3}
+  minionData: {fileID: 11400000, guid: 3dea3014b96e03d4ea0af31f3dd8d7e0, type: 2}
+  player: {fileID: 383402133}
+  maxAlive: 8
+  spawnInterval: 2.5
+  minDistanceFromPlayer: 6
+  mapBoundsCenter: {x: -56.5, y: 0, z: -0.25}
+  mapBoundsSize: {x: 280, y: 0, z: 235}
+--- !u!4 &735718708
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 735718706}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &737201340 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -1138009574998146573, guid: 5e903552e3ec5c3459d0fa0ca80c84b9, type: 3}
@@ -104449,8 +104503,8 @@ MonoBehaviour:
   maxSpidersSimultaneous: 25
   spawnInterval: 1
   minDistanceFromPlayer: 6
-  spawnAreaCenter: {x: 11.85, y: 0, z: 19.29}
-  spawnAreaSize: {x: 10, y: 0, z: 10}
+  mapBoundsCenter: {x: -56.5, y: 0, z: -0.25}
+  mapBoundsSize: {x: 280, y: 0, z: 235}
 --- !u!4 &1206548994
 Transform:
   m_ObjectHideFlags: 0
@@ -114023,8 +114077,8 @@ MonoBehaviour:
   maxEnemiesSimultaneous: 40
   spawnInterval: 1.5
   minDistanceFromPlayer: 5
-  spawnAreaCenter: {x: 42.81, y: 0, z: 10.92}
-  spawnAreaSize: {x: 20, y: 0, z: 20}
+  mapBoundsCenter: {x: -56.5, y: 0, z: -0.25}
+  mapBoundsSize: {x: 280, y: 0, z: 235}
 --- !u!4 &1383837689
 Transform:
   m_ObjectHideFlags: 0
@@ -122835,66 +122889,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 2849798421885508546, guid: 5e903552e3ec5c3459d0fa0ca80c84b9, type: 3}
---- !u!1 &1553512526
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1553512528}
-  - component: {fileID: 1553512527}
-  m_Layer: 0
-  m_Name: EnemySpawner2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1553512527
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1553512526}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 1026547323}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
-  enemyTypes:
-  - prefab: {fileID: 1571042049591659991, guid: 61b3e3801d56a3f429556c96ea2f07d6, type: 3}
-    data: {fileID: 11400000, guid: 06b5fe47154ed834c8cc34b1ed04966c, type: 2}
-    weight: 60
-  - prefab: {fileID: 1571042049591659991, guid: 61b3e3801d56a3f429556c96ea2f07d6, type: 3}
-    data: {fileID: 11400000, guid: 378d7c6eb797a454cb592a6efdba53ca, type: 2}
-    weight: 27
-  - prefab: {fileID: 1571042049591659991, guid: 61b3e3801d56a3f429556c96ea2f07d6, type: 3}
-    data: {fileID: 11400000, guid: c83327aac29774f4eab21b00a3952ad7, type: 2}
-    weight: 10
-  player: {fileID: 383402133}
-  maxEnemiesSimultaneous: 40
-  spawnInterval: 1.5
-  minDistanceFromPlayer: 5
-  spawnAreaCenter: {x: -50.94, y: 0, z: 12.85}
-  spawnAreaSize: {x: 20, y: 0, z: 20}
---- !u!4 &1553512528
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1553512526}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -64.4, y: 0, z: 7.8}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1553533620 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -869221199931775094, guid: 5e903552e3ec5c3459d0fa0ca80c84b9, type: 3}
@@ -132547,7 +132541,7 @@ MonoBehaviour:
   currentHP: 0
   restoreHP: -1
   isVulnerable: 0
-  vulnerableDuration: 5
+  vulnerableDuration: 2
   vulnerableDamageMultiplier: 3
   vulnerableTint: {r: 1, g: 0.35, b: 0.35, a: 1}
 --- !u!136 &1734215606
@@ -132588,6 +132582,7 @@ MonoBehaviour:
   player: {fileID: 383402133}
   data: {fileID: 11400000, guid: e8d76ccdf03ca19469943dbdb269c23d, type: 2}
   attackDistance: 5
+  moveSpeedOverride: 5
   attackHitDelay: 0.5
   groundMask:
     serializedVersion: 2
@@ -155230,10 +155225,10 @@ SceneRoots:
   - {fileID: 147513982}
   - {fileID: 797023304}
   - {fileID: 1383837689}
-  - {fileID: 1553512528}
   - {fileID: 1303683915}
   - {fileID: 1206548994}
   - {fileID: 764500658}
   - {fileID: 1436499970}
   - {fileID: 1370799645}
   - {fileID: 782069809}
+  - {fileID: 735718708}
