@@ -28,6 +28,10 @@ public class MainMenuController : MonoBehaviour
     [Header("Panel Cargar")]
     [SerializeField] private GameObject loadMenuPanel;
 
+    [Header("Portal")]
+    [Tooltip("Si está asignado, Nuevo Juego y Continuar entran con la animación de portal.")]
+    [SerializeField] private PortalTransition portalTransition;
+
     private bool _isLoading;
 
     private void Start()
@@ -56,7 +60,7 @@ public class MainMenuController : MonoBehaviour
         PlayClick();
         PlayerPrefs.DeleteKey("LastSaveSlot");
         PlayerPrefs.Save();
-        StartCoroutine(LoadWithScreen(gameSceneName));
+        EnterGame(gameSceneName);
     }
 
     public void Continuar()
@@ -68,7 +72,17 @@ public class MainMenuController : MonoBehaviour
         _isLoading = true;
         PlayClick();
         GameSession.PendingSave = save;
-        StartCoroutine(LoadWithScreen(save.sceneName));
+        EnterGame(save.sceneName);
+    }
+
+    // Nuevo Juego / Continuar entran con el portal si está asignado; si no,
+    // caen a la pantalla de carga clásica.
+    private void EnterGame(string sceneName)
+    {
+        if (portalTransition != null)
+            portalTransition.PlayThenLoad(sceneName);
+        else
+            StartCoroutine(LoadWithScreen(sceneName));
     }
 
     public void AbrirCargar()
