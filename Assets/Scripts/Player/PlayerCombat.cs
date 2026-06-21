@@ -27,7 +27,6 @@ public class PlayerCombat : MonoBehaviour
     [Tooltip("Tiempo (seg) que hay que esperar entre parry y parry. Ajustable a gusto desde el inspector.")]
     [SerializeField] private float parryCooldown = 2f;
     [SerializeField] private float parryRange = 2.5f;          // radio para detectar el ataque a parar
-    [SerializeField] private float parryStunRadius = 5f;       // radio (360°) de enemigos afectados por el stun
     [SerializeField] private float stunDuration = 2f;
     [Tooltip("Altura del cartel 'PARRY' sobre el oso, como fracción de su altura (0 = pies, 1 = coronilla). Bajalo si queda muy arriba / tapando la barra de vida.")]
     [Range(0f, 1f)]

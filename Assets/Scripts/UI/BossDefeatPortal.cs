@@ -36,7 +36,7 @@ public class BossDefeatPortal : MonoBehaviour
 
     private IEnumerator PlayPortalAfterDelay()
     {
-        if (portal == null) portal = FindObjectOfType<PortalTransition>(true);
+        if (portal == null) portal = FindAnyObjectByType<PortalTransition>(FindObjectsInactive.Include);
 
         if (delay > 0f)
             yield return new WaitForSecondsRealtime(delay);

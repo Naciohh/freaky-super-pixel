@@ -112,7 +112,7 @@ public class BossMinionSpawner : MonoBehaviour
 
     private void ClearMinions()
     {
-        var all = FindObjectsByType<EnemyHealth>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        var all = FindObjectsByType<EnemyHealth>(FindObjectsInactive.Exclude);
         foreach (var e in all)
             if (e != null && e.data == minionData) Destroy(e.gameObject);
         alive = 0;

@@ -54,7 +54,7 @@ public static class GameSnapshot
         }
 
         // --- Enemigos comunes vivos ---
-        var enemies = Object.FindObjectsByType<EnemyHealth>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        var enemies = Object.FindObjectsByType<EnemyHealth>(FindObjectsInactive.Exclude);
         foreach (var e in enemies)
         {
             if (e == null || e.data == null || e.data.isBoss) continue;

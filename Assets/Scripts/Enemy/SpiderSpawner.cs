@@ -100,7 +100,7 @@ public class SpiderSpawner : MonoBehaviour
     // Elimina todas las arañas vivas (en la pelea del boss solo debe estar el boss).
     private void ClearSpiders()
     {
-        var spiders = FindObjectsByType<SpiderAI>(FindObjectsSortMode.None);
+        var spiders = FindObjectsByType<SpiderAI>();
         foreach (var s in spiders)
             if (s != null) Destroy(s.gameObject);
         activeSpiders = 0;
