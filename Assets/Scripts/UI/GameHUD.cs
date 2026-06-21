@@ -20,7 +20,13 @@ public class GameHUD : MonoBehaviour
     public GameObject bossHealthBarGroup;
     public Image bossHealthBar;
 
+    [Header("Retrato jugador")]
+    public Image facePortrait;   // Cara recortada en el orbe del HUD.
+    public Sprite emilioFace;
+    public Sprite freakyFace;
+
     private BossController bossCtrl;
+    private bool faceShowsFreaky = false;
 
     void Awake()
     {
@@ -31,6 +37,10 @@ public class GameHUD : MonoBehaviour
         EnsureFillSprite(playerHealthBar);
         EnsureFillSprite(transformBar);
         EnsureFillSprite(bossHealthBar);
+
+        // Arranca mostrando la cara de Emilio.
+        if (facePortrait != null && emilioFace != null)
+            facePortrait.sprite = emilioFace;
     }
 
     private static Sprite _fillSprite;
@@ -54,11 +64,13 @@ public class GameHUD : MonoBehaviour
     void OnEnable()
     {
         WaveManager.OnWaveEnd += OnWaveEnd;
+        BossController.OnBossReady += OnBossReady;
     }
 
     void OnDisable()
     {
         WaveManager.OnWaveEnd -= OnWaveEnd;
+        BossController.OnBossReady -= OnBossReady;
     }
 
     private void OnWaveEnd()
@@ -66,8 +78,18 @@ public class GameHUD : MonoBehaviour
         if (waveTimerText != null) waveTimerText.gameObject.SetActive(false);
 
         // Incluye inactivos: el boss aún puede estar desactivado en este instante.
+        // Solo cacheamos la referencia; la barra recién se muestra en OnBossReady
+        // (cuando termina la cinemática), no durante la intro.
         bossCtrl = FindAnyObjectByType<BossController>(FindObjectsInactive.Include);
-        if (bossCtrl != null && bossHealthBarGroup != null)
+    }
+
+    // El boss terminó su cinemática (o se restauró un guardado): ahora sí mostramos la barra.
+    private void OnBossReady()
+    {
+        if (bossCtrl == null)
+            bossCtrl = FindAnyObjectByType<BossController>(FindObjectsInactive.Include);
+
+        if (bossHealthBarGroup != null)
             bossHealthBarGroup.SetActive(true);
     }
 
@@ -84,5 +106,17 @@ public class GameHUD : MonoBehaviour
 
         if (bossCtrl != null && bossHealthBar != null && bossCtrl.MaxHP > 0)
             bossHealthBar.fillAmount = (float)bossCtrl.CurrentHP / bossCtrl.MaxHP;
+
+        // Cambia la cara del retrato según el estado de transformación (Emilio ↔ Freaky).
+        if (facePortrait != null && transformationMode != null)
+        {
+            bool freaky = transformationMode.IsTransformed;
+            if (freaky != faceShowsFreaky)
+            {
+                faceShowsFreaky = freaky;
+                Sprite s = freaky ? freakyFace : emilioFace;
+                if (s != null) facePortrait.sprite = s;
+            }
+        }
     }
 }

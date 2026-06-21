@@ -43,7 +43,7 @@ public class GameStats : MonoBehaviour
             EnemiesKilled++;
     }
 
-    private void OnParry() => ParriesPerformed++;
+    private void OnParry(Vector3 _) => ParriesPerformed++;
 
     public void StopTracking() => tracking = false;
 

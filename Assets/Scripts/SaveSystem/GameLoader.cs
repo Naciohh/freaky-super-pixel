@@ -18,9 +18,13 @@ public class GameLoader : MonoBehaviour
         var ph = GetComponent<PlayerHealth>();
         if (ph != null)
         {
-            ph.currentHealth = save.currentHealth;
+            // Guard anti-muerto: un guardado con vida <= 0 es un estado muerto/corrupto
+            // (no deberías "continuar" muerto). Lo tratamos como inválido y restauramos
+            // con vida llena, así Continuar nunca te tira a un estado sin vida.
+            int restoredHealth = save.currentHealth > 0 ? save.currentHealth : ph.maxHealth;
+            ph.currentHealth = restoredHealth;
             if (ph.healthSlider != null)
-                ph.healthSlider.value = save.currentHealth;
+                ph.healthSlider.value = restoredHealth;
         }
 
         var tm = GetComponent<TransformationMode>();

@@ -28,6 +28,11 @@ public class PlayerMovement : MonoBehaviour
 
     private bool isTransformed = false;
 
+    // Ultima direccion hacia el mouse (horizontal, normalizada). La usa PlayerCombat
+    // para orientar el ataque exacto al mouse, sin el retraso del Slerp del cuerpo.
+    private Vector3 aimDirection = Vector3.forward;
+    public Vector3 AimDirection => aimDirection;
+
     void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -61,6 +66,8 @@ public class PlayerMovement : MonoBehaviour
         lookDir.y = 0f;
 
         if (lookDir.sqrMagnitude < 0.001f) return;
+
+        aimDirection = lookDir.normalized;
 
         Quaternion targetRotation = Quaternion.LookRotation(lookDir);
         transform.rotation = Quaternion.Slerp(
