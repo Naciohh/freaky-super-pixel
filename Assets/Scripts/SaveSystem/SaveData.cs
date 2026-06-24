@@ -14,6 +14,11 @@ public class SaveData
 {
     public string sceneName;
 
+    // --- Dificultad (GameDifficulty) ---
+    // Default 1 = Normal: los saves viejos sin este campo caen en Normal, porque
+    // JsonUtility conserva el inicializador cuando la clave no está en el JSON.
+    public int difficulty = 1;
+
     // --- Jugador ---
     public float posX, posY, posZ;
     public float rotY;

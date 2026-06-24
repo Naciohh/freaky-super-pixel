@@ -13,33 +13,63 @@ public class SpiderSpawner : MonoBehaviour
     [SerializeField] private float spawnInterval = 4f;        // Cada cuántos segundos sale una
     [SerializeField] private float minDistanceFromPlayer = 4f; // Distancia mínima para que no te aparezca encima
 
-    [Header("Área de Spawn")]
-    [SerializeField] private Vector3 spawnAreaCenter;
-    [SerializeField] private Vector3 spawnAreaSize = new Vector3(10f, 0f, 10f);
+    [Header("Área de spawn (todo el mapa, entre las 4 paredes)")]
+    [Tooltip("Las arañas aparecen en cualquier punto dentro de esta caja, igual que el resto de los enemigos.")]
+    [SerializeField] private Vector3 mapBoundsCenter = new Vector3(-56.5f, 0f, -0.25f);
+    [SerializeField] private Vector3 mapBoundsSize   = new Vector3(280f, 0f, 235f);
 
     private int activeSpiders = 0;
-    private bool spawning = true;
+    private bool _bossPhase = false;   // true cuando empieza la pelea del boss (fin de oleada)
+
+    void OnEnable()
+    {
+        EnemyHealth.OnAnyEnemyDied += OnSpiderDied;
+        // La pelea del boss empieza al terminar la oleada: cortar spawn + limpiar.
+        // (OnEnable corre antes que cualquier Start, así no nos perdemos el evento que
+        //  dispara GameLoader al restaurar un guardado ya en fase boss.)
+        WaveManager.OnWaveEnd += OnBossPhaseBegin;
+        WaveManager.OnWaveStart += OnWaveBegin;
+    }
+
+    void OnDisable()
+    {
+        EnemyHealth.OnAnyEnemyDied -= OnSpiderDied;
+        WaveManager.OnWaveEnd -= OnBossPhaseBegin;
+        WaveManager.OnWaveStart -= OnWaveBegin;
+    }
 
     void Start()
     {
-        // Vinculamos el evento de muerte para saber cuándo muere una araña y poder spawnear otra
-        EnemyHealth.OnAnyEnemyDied += OnSpiderDied;
+        // La dificultad escala cuántas arañas hay a la vez y cada cuánto salen.
+        maxSpidersSimultaneous = Mathf.Max(1, Mathf.RoundToInt(maxSpidersSimultaneous * GameDifficulty.SpawnCountMult));
+        spawnInterval = Mathf.Max(0.2f, spawnInterval * GameDifficulty.SpawnIntervalMult);
+
         StartCoroutine(SpawnLoop());
     }
 
-    void OnDestroy()
+    // Empieza la fase del boss: dejar de spawnear y eliminar las arañas vivas.
+    private void OnBossPhaseBegin()
     {
-        EnemyHealth.OnAnyEnemyDied -= OnSpiderDied;
+        _bossPhase = true;
+        ClearSpiders();
     }
 
+    // (Re)arrancó una oleada: volver a permitir arañas.
+    private void OnWaveBegin()
+    {
+        _bossPhase = false;
+    }
+
+    // Las arañas salen durante la oleada (comportamiento normal) y SOLO dejan de salir
+    // cuando empieza la pelea del boss. No dependemos de WaveActive (que puede no estar
+    // seteado según cómo se entró al nivel) para no romper el spawn.
     private IEnumerator SpawnLoop()
     {
-        while (spawning)
+        while (true)
         {
-            if (activeSpiders < maxSpidersSimultaneous)
-            {
+            if (!_bossPhase && activeSpiders < maxSpidersSimultaneous)
                 TrySpawn();
-            }
+
             yield return new WaitForSeconds(spawnInterval);
         }
     }
@@ -67,22 +97,33 @@ public class SpiderSpawner : MonoBehaviour
         activeSpiders++;
     }
 
+    // Elimina todas las arañas vivas (en la pelea del boss solo debe estar el boss).
+    private void ClearSpiders()
+    {
+        var spiders = FindObjectsByType<SpiderAI>();
+        foreach (var s in spiders)
+            if (s != null) Destroy(s.gameObject);
+        activeSpiders = 0;
+    }
+
     private Vector3 GetRandomSpawnPosition()
     {
-        Vector3 pos;
-        int attempts = 0;
-        do
-        {
-            pos = spawnAreaCenter + new Vector3(
-                Random.Range(-spawnAreaSize.x / 2f, spawnAreaSize.x / 2f),
-                0f,
-                Random.Range(-spawnAreaSize.z / 2f, spawnAreaSize.z / 2f)
-            );
-            attempts++;
-        }
-        while (player != null && Vector3.Distance(pos, player.position) < minDistanceFromPlayer && attempts < 10);
-
+        // Cualquier punto dentro del mapa (entre las 4 paredes), evitando caer
+        // demasiado cerca de Emilio.
+        Vector3 pos = RandomPointInMap();
+        for (int i = 0; i < 12 && player != null &&
+             Vector3.Distance(pos, player.position) < minDistanceFromPlayer; i++)
+            pos = RandomPointInMap();
         return pos;
+    }
+
+    private Vector3 RandomPointInMap()
+    {
+        Vector3 half = mapBoundsSize * 0.5f;
+        return new Vector3(
+            mapBoundsCenter.x + Random.Range(-half.x, half.x),
+            mapBoundsCenter.y,
+            mapBoundsCenter.z + Random.Range(-half.z, half.z));
     }
 
     private void OnSpiderDied(EnemyHealth eh)
@@ -97,7 +138,7 @@ public class SpiderSpawner : MonoBehaviour
     // Dibuja una caja verde en la pestaña Scene para saber dónde van a spawnear
     void OnDrawGizmosSelected()
     {
-        Gizmos.color = new Color(0f, 0.5f, 1f, 0.3f);
-        Gizmos.DrawCube(spawnAreaCenter, spawnAreaSize + Vector3.up * 0.1f);
+        Gizmos.color = new Color(0f, 0.5f, 1f, 0.12f);
+        Gizmos.DrawCube(mapBoundsCenter, mapBoundsSize + Vector3.up * 0.1f);
     }
 }

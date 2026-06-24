@@ -42,10 +42,36 @@ public static class SaveManager
 
     public static SaveData LoadLast()
     {
-        if (!PlayerPrefs.HasKey(LastSlotKey)) return null;
-        int slot = PlayerPrefs.GetInt(LastSlotKey);
-        if (slot < 0 || slot >= SlotCount) return null;
-        return Load(slot);
+        // 1) Intentar con el "último slot jugado".
+        if (PlayerPrefs.HasKey(LastSlotKey))
+        {
+            int slot = PlayerPrefs.GetInt(LastSlotKey);
+            if (slot >= 0 && slot < SlotCount)
+            {
+                var data = Load(slot);
+                if (data != null) return data;
+            }
+        }
+
+        // 2) Fallback: si no hay "último slot" válido (p.ej. nunca se guardó
+        //    LastSaveSlot), usar el save más reciente que exista.
+        int best = MostRecentSlot();
+        return best >= 0 ? Load(best) : null;
+    }
+
+    /// <summary>Slot con el save modificado más recientemente, o -1 si no hay ninguno.</summary>
+    public static int MostRecentSlot()
+    {
+        int best = -1;
+        DateTime newest = DateTime.MinValue;
+        for (int i = 0; i < SlotCount; i++)
+        {
+            string path = SlotPath(i);
+            if (!File.Exists(path)) continue;
+            DateTime t = File.GetLastWriteTime(path);
+            if (best < 0 || t > newest) { newest = t; best = i; }
+        }
+        return best;
     }
 
     public static bool HasAnySave()

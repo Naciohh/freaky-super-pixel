@@ -2,6 +2,8 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 using TMPro;
 
 public class PauseMenuManager : MonoBehaviour
@@ -28,11 +30,32 @@ public class PauseMenuManager : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
+        Gamepad gp = Gamepad.current;
+
+        // Abrir/cerrar pausa: Escape o el botón Options/Start del joystick.
+        bool togglePressed = Input.GetKeyDown(KeyCode.Escape)
+                          || (gp != null && gp.startButton.wasPressedThisFrame);
+
+        // Volver atrás con el Círculo (buttonEast = Círculo en PS, B en Xbox): SOLO
+        // cierra la pausa, no la abre.
+        bool backPressed = gp != null && gp.buttonEast.wasPressedThisFrame;
+
+        if (_isPaused)
         {
-            if (_isPaused) Resume();
-            else           StartCoroutine(PauseRoutine());
+            if (togglePressed || backPressed) Resume();
         }
+        else if (togglePressed)
+        {
+            StartCoroutine(PauseRoutine());
+        }
+    }
+
+    // Selecciona el primer botón del panel de pausa para poder navegar con el joystick.
+    private void SelectFirstInPause()
+    {
+        if (pausePanel == null || EventSystem.current == null) return;
+        var sel = pausePanel.GetComponentInChildren<Selectable>(false);
+        if (sel != null) EventSystem.current.SetSelectedGameObject(sel.gameObject);
     }
 
     private IEnumerator PauseRoutine()
@@ -60,6 +83,7 @@ public class PauseMenuManager : MonoBehaviour
 
         if (blurBackground != null) blurBackground.texture = _blurRT;
         if (pausePanel     != null) pausePanel.SetActive(true);
+        SelectFirstInPause();
         _isPaused      = true;
         Time.timeScale = 0f;
         MusicManager.Instance?.PauseMusic();
