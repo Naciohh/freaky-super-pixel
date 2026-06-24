@@ -8,14 +8,24 @@ public class BossBearHealth : MonoBehaviour
 
     public static event Action<BossBearHealth> OnBossDied;
 
+    // Cuenta de bosses vivos en escena. Sirve para saber si "estás peleando con el boss"
+    // (p. ej. TransformationMode bloquea la transformación mientras dure la pelea).
+    private static int _activeCount = 0;
+    public static bool IsFightActive => _activeCount > 0;
+
     public int currentHP;
+
+    // Vida máxima del oso ya escalada por dificultad (denominador de la barra de
+    // la HUD). Se calcula en Start = data.maxHP * GameDifficulty.BossHpMult.
+    public int MaxHP { get; private set; }
 
     // Si es >= 0, al iniciar usa este HP en vez de maxHP (para restaurar guardados).
     [HideInInspector] public int restoreHP = -1;
 
     [Header("Boss")]
     public bool isVulnerable = true;
-    public float vulnerableDuration = 5f;
+    [Tooltip("Cuánto dura aturdido/vulnerable el oso tras un parry (segundos). Ajustable desde el inspector.")]
+    public float vulnerableDuration = 2f;
 
     // Multiplica el daño recibido durante la ventana vulnerable, para que cada
     // "castigo" tras un parry recorte la barra de forma claramente visible.
@@ -35,6 +45,16 @@ public class BossBearHealth : MonoBehaviour
 
     private bool isDead = false;
 
+    void OnEnable()
+    {
+        _activeCount++;
+    }
+
+    void OnDisable()
+    {
+        _activeCount = Mathf.Max(0, _activeCount - 1);
+    }
+
     void Start()
     {
         if (data == null)
@@ -44,7 +64,13 @@ public class BossBearHealth : MonoBehaviour
             return;
         }
 
-        currentHP = restoreHP >= 0 ? restoreHP : data.maxHP;
+        // La dificultad escala la pelea: más HP, ventana vulnerable más corta y
+        // menos daño por golpe durante esa ventana.
+        MaxHP = Mathf.Max(1, Mathf.RoundToInt(data.maxHP * GameDifficulty.BossHpMult));
+        vulnerableDuration *= GameDifficulty.BossVulnerableDurationMult;
+        vulnerableDamageMultiplier = Mathf.Max(1f, vulnerableDamageMultiplier * GameDifficulty.BossVulnerableDamageMult);
+
+        currentHP = restoreHP >= 0 ? restoreHP : MaxHP;
 
         _healthBar = GetComponentInChildren<EnemyHealthBar>(true);
 
@@ -79,7 +105,7 @@ public class BossBearHealth : MonoBehaviour
 
         Debug.Log($"[BossBearHealth] Daño {dmg} aplicado (x{vulnerableDamageMultiplier}). HP={currentHP}/{data.maxHP}");
 
-        _healthBar?.UpdateBar(currentHP, data.maxHP);
+        _healthBar?.UpdateBar(currentHP, MaxHP);
 
         if (currentHP <= 0)
         {

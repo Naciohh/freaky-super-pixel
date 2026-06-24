@@ -23,13 +23,21 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private float spawnInterval = 3f;
     [SerializeField] private float minDistanceFromPlayer = 5f;
 
-    [Header("Spawn Area (World Space)")]
-    [SerializeField] private Vector3 spawnAreaCenter;
-    [SerializeField] private Vector3 spawnAreaSize = new Vector3(20f, 0f, 20f);
+    [Header("Área de spawn (todo el mapa, entre las 4 paredes)")]
+    [Tooltip("Los enemigos aparecen en cualquier punto dentro de esta caja. Default = mapa de Nivel01 (entre las paredes con fotos).")]
+    [SerializeField] private Vector3 mapBoundsCenter = new Vector3(-56.5f, 0f, -0.25f);
+    [SerializeField] private Vector3 mapBoundsSize   = new Vector3(280f, 0f, 235f);
 
     private int activeEnemies = 0;
     private bool spawning = false;
     private Coroutine spawnCoroutine;
+
+    void Awake()
+    {
+        // La dificultad escala cuántos enemigos hay a la vez y cada cuánto salen.
+        maxEnemiesSimultaneous = Mathf.Max(1, Mathf.RoundToInt(maxEnemiesSimultaneous * GameDifficulty.SpawnCountMult));
+        spawnInterval = Mathf.Max(0.2f, spawnInterval * GameDifficulty.SpawnIntervalMult);
+    }
 
     void OnEnable()
     {
@@ -60,7 +68,7 @@ public class EnemySpawner : MonoBehaviour
 
     public void DestroyAllNormalEnemies()
     {
-        EnemyHealth[] all = FindObjectsByType<EnemyHealth>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        EnemyHealth[] all = FindObjectsByType<EnemyHealth>(FindObjectsInactive.Exclude);
         foreach (var e in all)
         {
             if (e != null && e.data != null && !e.data.isBoss)
@@ -145,22 +153,22 @@ public class EnemySpawner : MonoBehaviour
 
     private Vector3 GetRandomSpawnPosition()
     {
-        Vector3 pos;
-        int attempts = 0;
-        do
-        {
-            pos = spawnAreaCenter + new Vector3(
-                Random.Range(-spawnAreaSize.x / 2f, spawnAreaSize.x / 2f),
-                0f,
-                Random.Range(-spawnAreaSize.z / 2f, spawnAreaSize.z / 2f)
-            );
-            attempts++;
-        }
-        while (player != null &&
-               Vector3.Distance(pos, player.position) < minDistanceFromPlayer &&
-               attempts < 10);
-
+        // Cualquier punto dentro del mapa (entre las 4 paredes), evitando caer
+        // demasiado cerca de Emilio para que no aparezcan encima de él.
+        Vector3 pos = RandomPointInMap();
+        for (int i = 0; i < 12 && player != null &&
+             Vector3.Distance(pos, player.position) < minDistanceFromPlayer; i++)
+            pos = RandomPointInMap();
         return pos;
+    }
+
+    private Vector3 RandomPointInMap()
+    {
+        Vector3 half = mapBoundsSize * 0.5f;
+        return new Vector3(
+            mapBoundsCenter.x + Random.Range(-half.x, half.x),
+            mapBoundsCenter.y,
+            mapBoundsCenter.z + Random.Range(-half.z, half.z));
     }
 
     private EnemySpawnEntry PickWeightedRandom()
@@ -187,7 +195,8 @@ public class EnemySpawner : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
-        Gizmos.color = new Color(0f, 1f, 0f, 0.3f);
-        Gizmos.DrawCube(spawnAreaCenter, spawnAreaSize + Vector3.up * 0.1f);
+        // Área de spawn = todo el mapa entre las 4 paredes.
+        Gizmos.color = new Color(0f, 1f, 0f, 0.15f);
+        Gizmos.DrawCube(mapBoundsCenter, mapBoundsSize + Vector3.up * 0.1f);
     }
 }

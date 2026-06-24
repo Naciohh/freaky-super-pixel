@@ -8,6 +8,7 @@ public static class GameSnapshot
     {
         var data = new SaveData();
         data.sceneName = SceneManager.GetActiveScene().name;
+        data.difficulty = (int)GameDifficulty.Current;
 
         // --- Jugador ---
         var playerGO = GameObject.FindWithTag("Player");
@@ -53,7 +54,7 @@ public static class GameSnapshot
         }
 
         // --- Enemigos comunes vivos ---
-        var enemies = Object.FindObjectsByType<EnemyHealth>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        var enemies = Object.FindObjectsByType<EnemyHealth>(FindObjectsInactive.Exclude);
         foreach (var e in enemies)
         {
             if (e == null || e.data == null || e.data.isBoss) continue;

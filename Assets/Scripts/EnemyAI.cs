@@ -43,8 +43,19 @@ public class EnemyAI : MonoBehaviour
     private PlayerHealth playerHealth;
     private AudioSource audioSource;
 
+    // Algunos modelos (ej. el oso minion, que reusa el animator del boss) animan el
+    // ataque con el trigger "Attack" en vez del bool "isAttacking". Cacheamos qué tiene.
+    private bool _hasAttackBool;
+    private bool _hasAttackTrigger;
+
     private float nextAttackTime = 0f;
     private Coroutine stunCoroutine;
+
+    [Header("Feedback stun")]
+    [Tooltip("Tinte del enemigo mientras está aturdido por un parry (para que se vea claro que quedó stuneado).")]
+    public Color stunTint = new Color(0.45f, 0.7f, 1f, 1f);   // celeste = aturdido
+    private Renderer[] _renderers;
+    private MaterialPropertyBlock _mpb;
 
     void Start()
     {
@@ -60,11 +71,17 @@ public class EnemyAI : MonoBehaviour
         if (anim == null)
             Debug.LogWarning($"[EnemyAI] No Animator found on {gameObject.name}.", this);
 
+        _hasAttackBool    = anim != null && anim.HasParameterOfType("isAttacking", AnimatorControllerParameterType.Bool);
+        _hasAttackTrigger = anim != null && anim.HasParameterOfType("Attack", AnimatorControllerParameterType.Trigger);
+
         audioSource = GetComponent<AudioSource>();
 
         playerHealth = player != null ? player.GetComponent<PlayerHealth>() : null;
 
         transform.localScale = Vector3.one * data.modelScale;
+
+        _renderers = GetComponentsInChildren<Renderer>(true);
+        _mpb = new MaterialPropertyBlock();
 
         ComputeFeetOffset();
     }
@@ -99,19 +116,22 @@ public class EnemyAI : MonoBehaviour
         if (distance < attackDistance)
         {
             anim.SetBool("isWalking", false);
-            anim.SetBool("isAttacking", true);
+            if (_hasAttackBool) anim.SetBool("isAttacking", true);
 
             isAttacking = true;
 
             if (Time.time >= nextAttackTime)
             {
+                // El oso minion usa el trigger "Attack" del animator del boss; los
+                // esqueletos usan el bool "isAttacking". Disparamos lo que tenga.
+                if (_hasAttackTrigger) anim.SetTrigger("Attack");
                 StartCoroutine(DealDamage());
                 nextAttackTime = Time.time + data.attackCooldown;
             }
         }
         else
         {
-            anim.SetBool("isAttacking", false);
+            if (_hasAttackBool) anim.SetBool("isAttacking", false);
             isAttacking = false;
 
             anim.SetBool("isWalking", true);
@@ -201,12 +221,34 @@ public class EnemyAI : MonoBehaviour
             anim.SetBool("isAttacking", false);
         }
 
+        SetStunVisual(true);
+
         yield return new WaitForSeconds(duration);
+
+        SetStunVisual(false);
 
         if (this != null)
             isAIActive = true;
 
         stunCoroutine = null;
+    }
+
+    // Tiñe al enemigo mientras está aturdido, para que se vea claramente que el parry lo stuneó.
+    private void SetStunVisual(bool on)
+    {
+        if (_renderers == null || _mpb == null)
+            return;
+
+        Color c = on ? stunTint : Color.white;
+
+        foreach (var r in _renderers)
+        {
+            if (r == null) continue;
+            r.GetPropertyBlock(_mpb);
+            _mpb.SetColor("_BaseColor", c);
+            _mpb.SetColor("_Color", c);
+            r.SetPropertyBlock(_mpb);
+        }
     }
 
     private IEnumerator DealDamage()
@@ -249,6 +291,7 @@ public class EnemyAI : MonoBehaviour
         HasPendingStrike = false;
 
         StopAllCoroutines();
+        SetStunVisual(false);
 
         if (anim != null)
         {

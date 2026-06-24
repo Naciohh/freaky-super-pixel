@@ -10,6 +10,10 @@ public class EnemyHealth : MonoBehaviour
 
     public int currentHP;
 
+    // Vida máxima ya escalada por dificultad (denominador de la barra). Se calcula
+    // en Start a partir de data.maxHP * GameDifficulty.EnemyHpMult (el boss no escala).
+    public int MaxHPEffective { get; private set; }
+
     // Si es >= 0, al iniciar usa este HP en vez de maxHP (para restaurar guardados).
     [HideInInspector] public int restoreHP = -1;
 
@@ -29,7 +33,12 @@ public class EnemyHealth : MonoBehaviour
             return;
         }
 
-        currentHP = restoreHP >= 0 ? restoreHP : data.maxHP;
+        // El boss no escala su vida acá (lo maneja BossBearHealth); los comunes sí.
+        MaxHPEffective = data.isBoss
+            ? data.maxHP
+            : Mathf.Max(1, Mathf.RoundToInt(data.maxHP * GameDifficulty.EnemyHpMult));
+
+        currentHP = restoreHP >= 0 ? restoreHP : MaxHPEffective;
 
         _healthBar = GetComponentInChildren<EnemyHealthBar>(true);
 
@@ -48,7 +57,7 @@ public class EnemyHealth : MonoBehaviour
 
         currentHP = Mathf.Max(currentHP, 0);
 
-        _healthBar?.UpdateBar(currentHP, data.maxHP);
+        _healthBar?.UpdateBar(currentHP, MaxHPEffective);
 
         if (currentHP <= 0)
         {
