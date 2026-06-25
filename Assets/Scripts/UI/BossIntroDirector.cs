@@ -47,6 +47,7 @@ public class BossIntroDirector : MonoBehaviour
     private IEnumerator IntroSequence()
     {
         Time.timeScale = 0f;
+        HudVisibility.Hide();   // ocultar TODO el HUD de gameplay; solo se ve el cartel del oso
 
         // Que el boss anime (idle + golpe) aunque el tiempo esté congelado.
         currentBoss.SetIntroAnimatorUnscaled(true);
@@ -144,6 +145,7 @@ public class BossIntroDirector : MonoBehaviour
 
         currentBoss.SetIntroAnimatorUnscaled(false);
 
+        HudVisibility.Show();   // restaurar HUD; OnIntroComplete arrancará la pelea y la barra del boss
         Time.timeScale = 1f;
         currentBoss.OnIntroComplete();
     }

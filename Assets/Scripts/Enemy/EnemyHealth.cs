@@ -72,6 +72,10 @@ public class EnemyHealth : MonoBehaviour
 
         isDead = true;
 
+        // Apagar los colliders del cuerpo: el cadáver (queda unos segundos antes de
+        // destruirse) no debe empujar ni estorbar al jugador.
+        DisableColliders();
+
         // Si es una araña, usar su sistema propio
         if (_spiderAI != null)
         {
@@ -82,10 +86,11 @@ public class EnemyHealth : MonoBehaviour
             return;
         }
 
-        // Si es enemigo normal (esqueleto, carrito, etc)
+        // Si es enemigo normal (esqueleto, carrito, etc): frenarlo del todo (corta la
+        // embestida en curso, apaga IA y colliders) para que el cadáver no empuje.
         if (_enemyAI != null)
         {
-            _enemyAI.isAIActive = false;
+            _enemyAI.HaltForDeath();
         }
 
         // Animación de muerte clásica
@@ -104,6 +109,14 @@ public class EnemyHealth : MonoBehaviour
         OnAnyEnemyDied?.Invoke(this);
 
         Destroy(gameObject, 3f);
+    }
+
+    // Desactiva todos los colliders (propios y de hijos) para que el cuerpo muerto
+    // deje de colisionar/empujar al jugador. Los triggers también se apagan.
+    private void DisableColliders()
+    {
+        foreach (var col in GetComponentsInChildren<Collider>(true))
+            col.enabled = false;
     }
 }
 
