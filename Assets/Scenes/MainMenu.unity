@@ -273,6 +273,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InteractionStation
   buttonSign: {fileID: 887048075}
   promptE: {fileID: 1150290740}
+  promptGamepad: {fileID: 0}
   idleScale: 0.4
   activeScale: 0.85
   lerpSpeed: 8
@@ -3527,6 +3528,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InteractionStation
   buttonSign: {fileID: 514041356}
   promptE: {fileID: 17234099}
+  promptGamepad: {fileID: 0}
   idleScale: 0.4
   activeScale: 0.85
   lerpSpeed: 8
@@ -6867,6 +6869,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InteractionStation
   buttonSign: {fileID: 499953336}
   promptE: {fileID: 1505875728}
+  promptGamepad: {fileID: 0}
   idleScale: 0.4
   activeScale: 0.85
   lerpSpeed: 8
@@ -7243,6 +7246,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InteractionStation
   buttonSign: {fileID: 540226649}
   promptE: {fileID: 2006783212}
+  promptGamepad: {fileID: 0}
   idleScale: 0.4
   activeScale: 0.85
   lerpSpeed: 8
@@ -7468,6 +7472,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InteractionStation
   buttonSign: {fileID: 1335827072}
   promptE: {fileID: 2057389015}
+  promptGamepad: {fileID: 0}
   idleScale: 0.4
   activeScale: 0.85
   lerpSpeed: 8
@@ -8150,6 +8155,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InteractionStation
   buttonSign: {fileID: 1572835505}
   promptE: {fileID: 1808416282}
+  promptGamepad: {fileID: 0}
   idleScale: 0.4
   activeScale: 0.85
   lerpSpeed: 8
@@ -9827,8 +9833,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraFollow
   target: {fileID: 1047797966}
-  offset: {x: -22, y: 27, z: -22}
+  distance: 22
+  focusHeight: 1.5
   followSpeed: 6
+  pitchAngle: 24
+  yawAngle: 45
   collisionOffset: 0.5
   collisionLayers:
     serializedVersion: 2
