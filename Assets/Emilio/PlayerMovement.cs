@@ -29,6 +29,12 @@ public class PlayerMovement : MonoBehaviour
 
     private bool isTransformed = false;
 
+    // Congela el movimiento y apuntado de Emilio sin tocar Time.timeScale. Lo usan
+    // los popups del lobby (controles, dificultad) y la cinemática de entrada, donde
+    // el juego sigue corriendo pero el jugador no debe moverse. Pausa/GameOver/Victoria
+    // ya congelan con timeScale=0, así que no dependen de esto.
+    public static bool InputLocked = false;
+
     // Ultima direccion hacia el mouse (horizontal, normalizada). La usa PlayerCombat
     // para orientar el ataque exacto al mouse, sin el retraso del Slerp del cuerpo.
     private Vector3 aimDirection = Vector3.forward;
@@ -36,6 +42,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Awake()
     {
+        InputLocked = false;   // arranca desbloqueado en cada escena (el flag es estático)
         controller = GetComponent<CharacterController>();
 
         if (aimCamera == null) aimCamera = Camera.main;
@@ -46,6 +53,13 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        if (InputLocked)
+        {
+            // Frenado: sin movimiento ni animación de caminar mientras hay un popup.
+            GetCurrentAnimator().SetBool("IsMoving", false);
+            return;
+        }
+
         HandleAiming();
         HandleMovement();
     }

@@ -10,6 +10,10 @@ public class EnemyAI : MonoBehaviour
     [Header("Config")]
     public float attackDistance = 2f;
 
+    [Tooltip("Si está activo (o lo está en el EnemyData), este enemigo ataca por " +
+             "embestida (retrocede y se lanza). Útil para el esqueleto del carrito.")]
+    public bool lungeAttack = false;
+
     // Demora desde que arranca el ataque hasta que conecta el golpe.
     // Es la ventana en la que el ataque se puede parar con un parry. Ajustar para
     // que coincida con el frame del "slash" de la animación.
@@ -38,6 +42,7 @@ public class EnemyAI : MonoBehaviour
     public bool HasPendingStrike { get; private set; }
 
     private bool isDead = false;
+    private bool _lunging = false;   // true mientras corre la embestida (carrito)
 
     private Animator anim;
     private PlayerHealth playerHealth;
@@ -107,6 +112,8 @@ public class EnemyAI : MonoBehaviour
         if (!isAIActive || player == null || anim == null)
             return;
 
+        if (_lunging) return;   // la embestida controla el cuerpo; no pisar su movimiento
+
         float distance = Vector3.Distance(transform.position, player.position);
 
         // Mirar al jugador sin inclinarse cuando está a otra altura.
@@ -122,11 +129,20 @@ public class EnemyAI : MonoBehaviour
 
             if (Time.time >= nextAttackTime)
             {
-                // El oso minion usa el trigger "Attack" del animator del boss; los
-                // esqueletos usan el bool "isAttacking". Disparamos lo que tenga.
-                if (_hasAttackTrigger) anim.SetTrigger("Attack");
-                StartCoroutine(DealDamage());
                 nextAttackTime = Time.time + data.attackCooldown;
+
+                if (lungeAttack || data.lungeAttack)
+                {
+                    // Carrito: ataque por embestida (retrocede y se lanza adelante).
+                    StartCoroutine(LungeAttack());
+                }
+                else
+                {
+                    // El oso minion usa el trigger "Attack" del animator del boss; los
+                    // esqueletos usan el bool "isAttacking". Disparamos lo que tenga.
+                    if (_hasAttackTrigger) anim.SetTrigger("Attack");
+                    StartCoroutine(DealDamage());
+                }
             }
         }
         else
@@ -277,6 +293,81 @@ public class EnemyAI : MonoBehaviour
         {
             playerHealth.TakeDamage(data.damage);
         }
+    }
+
+    // Ataque por embestida del carrito: retrocede en el windup y se lanza hacia
+    // adelante; el daño se aplica al CHOCAR al jugador durante la ida. El parry lo
+    // interrumpe igual que un golpe normal (mira HasPendingStrike / isAIActive).
+    private IEnumerator LungeAttack()
+    {
+        _lunging = true;
+        isAttacking = true;
+        HasPendingStrike = true;
+
+        Vector3 dir = player.position - transform.position;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.0001f) dir = transform.forward;
+        dir.Normalize();
+        transform.rotation = Quaternion.LookRotation(dir);   // encarar antes de embestir
+
+        Vector3 start = transform.position;
+        Vector3 back  = start - dir * data.lungeBackDistance;
+
+        // 1) Windup: retroceder un poco.
+        for (float t = 0f; t < data.lungeWindupTime; t += Time.deltaTime)
+        {
+            if (!isAIActive) { EndLunge(); yield break; }   // parry/stun cancela
+            transform.position = Vector3.Lerp(start, back, t / Mathf.Max(0.0001f, data.lungeWindupTime));
+            SnapToGround();
+            yield return null;
+        }
+
+        if (audioSource != null && attackWhoosh != null)
+            audioSource.PlayOneShot(attackWhoosh);
+
+        // 2) Embestida hacia adelante; pega si alcanza al jugador.
+        Vector3 fwdTarget = back + dir * (data.lungeBackDistance + data.lungeForwardDistance);
+        bool hit = false;
+        for (float t = 0f; t < data.lungeForwardTime; t += Time.deltaTime)
+        {
+            if (!isAIActive) { EndLunge(); yield break; }
+            transform.position = Vector3.Lerp(back, fwdTarget, t / data.lungeForwardTime);
+            SnapToGround();
+
+            if (!hit && player != null &&
+                Vector3.Distance(transform.position, player.position) <= data.lungeHitRange)
+            {
+                hit = true;
+                HasPendingStrike = false;
+                if (playerHealth != null) playerHealth.TakeDamage(data.damage);
+            }
+            yield return null;
+        }
+
+        EndLunge();
+    }
+
+    private void EndLunge()
+    {
+        _lunging = false;
+        isAttacking = false;
+        HasPendingStrike = false;
+    }
+
+    /// <summary>
+    /// Frena por completo al enemigo al morir: corta cualquier corrutina (incluida la
+    /// embestida en curso), apaga la IA y desactiva sus colliders. Así el cadáver no
+    /// sigue moviéndose ni empuja al jugador. Lo llama EnemyHealth al morir.
+    /// </summary>
+    public void HaltForDeath()
+    {
+        StopAllCoroutines();
+        _lunging = false;
+        isAIActive = false;
+        isAttacking = false;
+        HasPendingStrike = false;
+        foreach (var col in GetComponentsInChildren<Collider>(true))
+            col.enabled = false;
     }
 
     public void Die()

@@ -55,6 +55,7 @@ public class InteractionStation : MonoBehaviour
     private bool             _inRange;
     private bool             _promptShown;
     private bool             _lastGamepad;
+    private bool             _modalBlockedLastFrame;
     private SpriteRenderer[] _signRenderers;
     private Color[]          _baseColors;
 
@@ -110,9 +111,15 @@ public class InteractionStation : MonoBehaviour
                 Time.unscaledDeltaTime * lerpSpeed);
         }
 
-        // Activar con E (teclado) o X / R1 del joystick.
-        if (_inRange && interactable && InteractPressed())
+        // Activar con E (teclado) o X / R1 del joystick. Si hay un popup del lobby
+        // abierto (controles, dificultad), la estación NO reacciona: si no, la misma
+        // X con la que se elige dentro del popup re-dispararía esta estación y lo
+        // reabriría. Bloqueamos también el frame en que el popup se cierra (la X de
+        // confirmar/cancelar cierra el modal ese mismo frame, sin importar el orden).
+        bool modalOpen = LobbyModal.IsOpen;
+        if (_inRange && interactable && !modalOpen && !_modalBlockedLastFrame && InteractPressed())
             onActivate?.Invoke();
+        _modalBlockedLastFrame = modalOpen;
     }
 
     // True el frame en que se aprieta el botón de interactuar: tecla E, o X
