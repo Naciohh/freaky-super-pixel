@@ -178,6 +178,10 @@ public class BossBearHealth : MonoBehaviour
 
         isDead = true;
 
+        // El cadáver del oso tampoco debe empujar al jugador.
+        foreach (var col in GetComponentsInChildren<Collider>(true))
+            col.enabled = false;
+
         if (_enemyAI != null)
         {
             _enemyAI.isAIActive = false;

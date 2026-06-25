@@ -14,8 +14,9 @@ using TMPro;
 public class ParryCooldownHUD : MonoBehaviour
 {
     [Header("Posición / tamaño (en píxeles)")]
-    [Tooltip("Posición respecto del borde INFERIOR-CENTRO de la pantalla. X+ = derecha, Y+ = arriba.")]
-    public Vector2 anchoredPosition = new Vector2(0f, 170f);
+    [Tooltip("Posición respecto del borde INFERIOR-IZQUIERDO de la pantalla. X+ = derecha, Y+ = arriba. " +
+             "Por defecto queda justo arriba del orbe de avatar de Emilio.")]
+    public Vector2 anchoredPosition = new Vector2(150f, 335f);
     [Tooltip("Diámetro del indicador en píxeles.")]
     public float size = 96f;
 
@@ -70,12 +71,12 @@ public class ParryCooldownHUD : MonoBehaviour
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = 0.5f;
 
-        // Contenedor anclado al borde inferior-centro.
+        // Contenedor anclado al borde inferior-izquierdo (sobre el orbe de avatar).
         var container = new GameObject("Container", typeof(RectTransform));
         container.transform.SetParent(canvasGO.transform, false);
         var rt = container.GetComponent<RectTransform>();
-        rt.anchorMin = new Vector2(0.5f, 0f);
-        rt.anchorMax = new Vector2(0.5f, 0f);
+        rt.anchorMin = new Vector2(0f, 0f);
+        rt.anchorMax = new Vector2(0f, 0f);
         rt.pivot = new Vector2(0.5f, 0.5f);
         rt.sizeDelta = new Vector2(size, size);
         rt.anchoredPosition = anchoredPosition;
@@ -164,14 +165,14 @@ public class ParryCooldownHUD : MonoBehaviour
         if (combat == null)
             combat = FindAnyObjectByType<PlayerCombat>();
 
-        bool hasPlayer = combat != null;
+        // Ocultar sin jugador (menú, carga) o durante una cinemática (HUD oculto).
+        bool show = combat != null && !HudVisibility.GameplayHidden;
 
-        // Sin jugador (menú, carga, etc.): ocultar.
-        if (track != null) track.enabled = hasPlayer;
-        if (sweep != null) sweep.enabled = hasPlayer;
-        if (label != null) label.enabled = hasPlayer;
+        if (track != null) track.enabled = show;
+        if (sweep != null) sweep.enabled = show;
+        if (label != null) label.enabled = show;
 
-        if (!hasPlayer || sweep == null)
+        if (!show || sweep == null)
             return;
 
         if (combat.IsParryReady)

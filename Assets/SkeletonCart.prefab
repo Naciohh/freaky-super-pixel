@@ -399,6 +399,7 @@ MonoBehaviour:
   player: {fileID: 0}
   data: {fileID: 11400000, guid: 378d7c6eb797a454cb592a6efdba53ca, type: 2}
   attackDistance: 1.5
+  lungeAttack: 0
   attackHitDelay: 0.5
   separationRadius: 1.4
   separationStrength: 4
@@ -410,6 +411,7 @@ MonoBehaviour:
   groundOffset: 0
   attackWhoosh: {fileID: 0}
   isAIActive: 1
+  stunTint: {r: 0.45, g: 0.7, b: 1, a: 1}
 --- !u!1001 &7797269885514847948
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1254,6 +1256,7 @@ MonoBehaviour:
   player: {fileID: 0}
   data: {fileID: 11400000, guid: 378d7c6eb797a454cb592a6efdba53ca, type: 2}
   attackDistance: 2
+  lungeAttack: 1
   attackHitDelay: 0.5
   separationRadius: 1.4
   separationStrength: 1.5
@@ -1265,6 +1268,7 @@ MonoBehaviour:
   groundOffset: 0
   attackWhoosh: {fileID: 0}
   isAIActive: 1
+  stunTint: {r: 0.45, g: 0.7, b: 1, a: 1}
 --- !u!136 &1618367269630438576
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1319,6 +1323,7 @@ MonoBehaviour:
   player: {fileID: 0}
   data: {fileID: 11400000, guid: 378d7c6eb797a454cb592a6efdba53ca, type: 2}
   attackDistance: 1.5
+  lungeAttack: 0
   attackHitDelay: 0.5
   separationRadius: 1.4
   separationStrength: 4
@@ -1330,6 +1335,7 @@ MonoBehaviour:
   groundOffset: 0
   attackWhoosh: {fileID: 0}
   isAIActive: 1
+  stunTint: {r: 0.45, g: 0.7, b: 1, a: 1}
 --- !u!4 &7764151723967115559 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: be3776e9bd6e31341b3490a035f6ea50, type: 3}

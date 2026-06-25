@@ -27,7 +27,20 @@ public class PortalTransition : MonoBehaviour
     [Header("Video / Audio")]
     [SerializeField] private VideoPlayer videoPlayer;
     [SerializeField] private AudioSource audioSource;
+    [Tooltip("Audio del portal VERDE original (victoria -> lobby). Los portales de " +
+             "dificultad NO lo usan: traen su propio audio en el mp4.")]
     [SerializeField] private AudioClip   playClip;
+
+    [Header("Portales por dificultad (inicio de partida)")]
+    [Tooltip("Si están asignados, el portal de INICIO cambia según la dificultad elegida. " +
+             "La victoria siempre usa el clip por defecto (verde) del VideoPlayer.")]
+    [SerializeField] private VideoClip facilClip;
+    [SerializeField] private VideoClip medioClip;
+    [SerializeField] private VideoClip dificilClip;
+    [SerializeField] private VideoClip pesadillaClip;
+
+    private VideoClip _defaultClip;       // el verde original (para la victoria)
+    private bool _useDifficultyPortal;
 
     [Header("Tiempos")]
     [Tooltip("Fade-in del overlay para tapar el menú antes de que arranque el video.")]
@@ -42,6 +55,16 @@ public class PortalTransition : MonoBehaviour
     {
         if (videoPlayer == null) videoPlayer = GetComponent<VideoPlayer>();
 
+        // El clip que venga asignado en el inspector es el portal VERDE original.
+        _defaultClip = videoPlayer != null ? videoPlayer.clip : null;
+
+        // Audio por la pista del propio video (los mp4 de dificultad traen sonido).
+        if (videoPlayer != null && audioSource != null)
+        {
+            videoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
+            videoPlayer.SetTargetAudioSource(0, audioSource);
+        }
+
         if (overlay != null)
         {
             overlay.alpha          = 0f;
@@ -50,12 +73,34 @@ public class PortalTransition : MonoBehaviour
         }
     }
 
-    /// <summary>Reproduce el portal completo y, al terminar, carga la escena.</summary>
-    public void PlayThenLoad(string sceneName)
+    /// <summary>
+    /// Reproduce el portal de INICIO de partida (cambia según la dificultad elegida)
+    /// y, al terminar, carga la escena.
+    /// </summary>
+    public void PlayThenLoad(string sceneName) => PlayThenLoad(sceneName, true);
+
+    /// <summary>
+    /// <paramref name="useDifficultyPortal"/> = true: portal de inicio según dificultad.
+    /// false: portal VERDE original (victoria -> lobby).
+    /// </summary>
+    public void PlayThenLoad(string sceneName, bool useDifficultyPortal)
     {
         if (_playing || string.IsNullOrEmpty(sceneName)) return;
         _playing = true;
+        _useDifficultyPortal = useDifficultyPortal;
         StartCoroutine(Routine(sceneName));
+    }
+
+    private VideoClip ClipForDifficulty()
+    {
+        switch (GameDifficulty.Current)
+        {
+            case Difficulty.Facil:     return facilClip;
+            case Difficulty.Normal:    return medioClip;
+            case Difficulty.Dificil:   return dificilClip;
+            case Difficulty.Pesadilla: return pesadillaClip;
+            default:                   return null;
+        }
     }
 
     private IEnumerator Routine(string sceneName)
@@ -79,6 +124,12 @@ public class PortalTransition : MonoBehaviour
         _videoFinished = false;
         if (videoPlayer != null)
         {
+            // Elegir el clip: inicio -> según dificultad (con fallback al verde);
+            // victoria -> verde original.
+            VideoClip clip = _useDifficultyPortal ? (ClipForDifficulty() ?? _defaultClip) : _defaultClip;
+            if (clip != null) videoPlayer.clip = clip;
+            videoPlayer.EnableAudioTrack(0, true);
+
             videoPlayer.isLooping = false;
             videoPlayer.loopPointReached += OnVideoEnd;
 
@@ -100,8 +151,9 @@ public class PortalTransition : MonoBehaviour
             _videoFinished = true;
         }
 
-        // 3) Audio del "play" sincronizado con el arranque del video.
-        if (audioSource != null && playClip != null)
+        // 3) Audio: los portales de dificultad traen su propio audio (pista del mp4).
+        //    Solo el portal VERDE original (victoria) usa el playClip suelto.
+        if (!_useDifficultyPortal && audioSource != null && playClip != null)
             audioSource.PlayOneShot(playClip);
 
         // 4) Esperar a que el video termine COMPLETO antes de tocar la escena.

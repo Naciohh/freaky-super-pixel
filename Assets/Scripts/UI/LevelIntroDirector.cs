@@ -90,6 +90,8 @@ public class LevelIntroDirector : MonoBehaviour
             badgeCanvasGroup = badgeImage.GetComponentInParent<CanvasGroup>(true);
 
         Time.timeScale = 0f;
+        PlayerMovement.InputLocked = true;  // que no rote/camine en el lugar durante la cinemática
+        HudVisibility.Hide();               // ocultar HUD de gameplay; solo se ve el cartel del mapa
 
         // Animators de Emilio en Unscaled para que el idle se mueva con el tiempo congelado.
         Animator[] anims = player.GetComponentsInChildren<Animator>(true);
@@ -207,6 +209,8 @@ public class LevelIntroDirector : MonoBehaviour
         for (int i = 0; i < anims.Length; i++)
             if (anims[i] != null) anims[i].updateMode = prevModes[i];
 
+        HudVisibility.Show();               // restaurar HUD al terminar la cinemática
+        PlayerMovement.InputLocked = false;
         Time.timeScale = 1f;
     }
 }
