@@ -14,7 +14,17 @@ public class AchievementDef
     private VideoClip _video;
 
     public Sprite Sprite => _sprite != null ? _sprite : (_sprite = Resources.Load<Sprite>(spriteResource));
-    public VideoClip Video => _video != null ? _video : (_video = Resources.Load<VideoClip>(videoResource));
+
+    // Los logros "solo display" no tienen video: videoResource vacío => null.
+    public VideoClip Video
+    {
+        get
+        {
+            if (_video != null) return _video;
+            if (string.IsNullOrEmpty(videoResource)) return null;
+            return _video = Resources.Load<VideoClip>(videoResource);
+        }
+    }
 }
 
 // Tabla estática de los 6 logros + metas de los contadores.
@@ -34,6 +44,16 @@ public static class AchievementCatalog
         new AchievementDef { id = AchievementId.UnOsoWacho,          displayName = "Un oso wacho",         spriteResource = "Achievements/Sprites/logro_oso",       videoResource = "Achievements/Videos/logro_oso" },
         new AchievementDef { id = AchievementId.ElFamosoEasterEgg,   displayName = "El famoso easter egg", spriteResource = "Achievements/Sprites/logro_easteregg", videoResource = "Achievements/Videos/logro_easteregg" },
         new AchievementDef { id = AchievementId.AxelElCapo,          displayName = "Axel el capo",         spriteResource = "Achievements/Sprites/logro_axel",      videoResource = "Achievements/Videos/logro_axel" },
+
+        // Solo display (siempre bloqueados; sin video). videoResource vacío a propósito.
+        new AchievementDef { id = AchievementId.CazadorDeOsos,   displayName = "Cazador de osos",   spriteResource = "Achievements/Sprites/logro_cazador",    videoResource = "" },
+        new AchievementDef { id = AchievementId.Coleccionista,   displayName = "Coleccionista",     spriteResource = "Achievements/Sprites/logro_logros",     videoResource = "" },
+        new AchievementDef { id = AchievementId.MaestroDelParry, displayName = "Maestro del parry", spriteResource = "Achievements/Sprites/logro_parry",      videoResource = "" },
+        new AchievementDef { id = AchievementId.ParryAlOso,      displayName = "Parry al oso",      spriteResource = "Achievements/Sprites/logro_parry_boss", videoResource = "" },
+        new AchievementDef { id = AchievementId.Pesadilla,       displayName = "Pesadilla",         spriteResource = "Achievements/Sprites/logro_pesadilla",  videoResource = "" },
+        new AchievementDef { id = AchievementId.PrimeraSangre,   displayName = "Primera sangre",    spriteResource = "Achievements/Sprites/logro_sangre",     videoResource = "" },
+        new AchievementDef { id = AchievementId.Speedrunner,     displayName = "Speedrunner",       spriteResource = "Achievements/Sprites/logro_speedrun",   videoResource = "" },
+        new AchievementDef { id = AchievementId.ModoZen,         displayName = "Modo zen",          spriteResource = "Achievements/Sprites/logro_zen",        videoResource = "" },
     };
 
     private static Dictionary<AchievementId, AchievementDef> _map;

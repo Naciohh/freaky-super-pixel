@@ -6,5 +6,15 @@ public enum AchievementId
     SepultureroEnRacha,
     UnOsoWacho,
     ElFamosoEasterEgg,
-    AxelElCapo
+    AxelElCapo,
+
+    // --- Solo display por ahora (aparecen en el popup, no se desbloquean, sin video) ---
+    CazadorDeOsos,
+    Coleccionista,
+    MaestroDelParry,
+    ParryAlOso,
+    Pesadilla,
+    PrimeraSangre,
+    Speedrunner,
+    ModoZen
 }
