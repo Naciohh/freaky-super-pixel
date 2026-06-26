@@ -16,6 +16,16 @@ public class AchievementBanner : MonoBehaviour
     private CanvasGroup _group;
     private RenderTexture _rt;
 
+    [Header("Apariencia (16:9)")]
+    [SerializeField] private Vector2 bannerSize = new Vector2(520f, 293f); // ~16:9
+    [SerializeField] private float topMargin = 60f;        // separación del borde superior
+    [SerializeField] private float bannerDuration = 4f;    // cuánto se queda visible
+    [SerializeField] private float slideDuration = 0.35f;  // entrada/salida deslizando
+
+    private RectTransform _bannerRT;
+    private Vector2 _restPos;     // posición visible (con margen)
+    private Vector2 _hiddenPos;   // arriba, fuera de pantalla
+
     private readonly Queue<AchievementDef> _queue = new Queue<AchievementDef>();
     private bool _playing;
     private bool _videoFinished;
@@ -72,18 +82,22 @@ public class AchievementBanner : MonoBehaviour
         var imgGo = new GameObject("BannerVideo", typeof(RectTransform));
         imgGo.transform.SetParent(transform, false);
         _raw = imgGo.AddComponent<RawImage>();
-        var rt = _raw.rectTransform;
-        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
-        rt.pivot = new Vector2(0.5f, 1f);
-        rt.anchoredPosition = new Vector2(0f, -40f);
-        rt.sizeDelta = new Vector2(800f, 225f);   // ajustar al aspect real del video
+        _bannerRT = _raw.rectTransform;
+        _bannerRT.anchorMin = _bannerRT.anchorMax = new Vector2(0.5f, 1f); // anclado arriba-centro
+        _bannerRT.pivot = new Vector2(0.5f, 1f);
+        _bannerRT.sizeDelta = bannerSize;
 
-        _rt = new RenderTexture(1280, 360, 0);
+        _restPos   = new Vector2(0f, -topMargin);              // visible, con margen
+        _hiddenPos = new Vector2(0f, bannerSize.y + 20f);      // fuera de pantalla, arriba
+        _bannerRT.anchoredPosition = _hiddenPos;
+
+        // RenderTexture en 16:9 para no estirar el video (los .mov son 1920x1080).
+        _rt = new RenderTexture(1280, 720, 0);
         _raw.texture = _rt;
 
         _vp = gameObject.AddComponent<VideoPlayer>();
         _vp.playOnAwake = false;
-        _vp.isLooping = false;
+        _vp.isLooping = true;   // si el clip es corto, sigue hasta cumplir bannerDuration
         _vp.renderMode = VideoRenderMode.RenderTexture;
         _vp.targetTexture = _rt;
 
@@ -121,21 +135,37 @@ public class AchievementBanner : MonoBehaviour
             while (!prepared && to > 0f) { to -= Time.unscaledDeltaTime; yield return null; }
             _vp.prepareCompleted -= OnPrep;
 
-            _videoFinished = false;
+            _bannerRT.anchoredPosition = _hiddenPos;
             _group.alpha = 1f;
             _vp.Play();
 
-            // Usar tiempo real: la cinemática del boss congela Time.timeScale.
-            float dur = 4f;
-            if (clip.frameRate > 0) dur = (float)(clip.frameCount / clip.frameRate);
-            float elapsed = 0f;
-            while (!_videoFinished && elapsed < dur + 1.5f)
-            { elapsed += Time.unscaledDeltaTime; yield return null; }
+            // Todo en tiempo real: la cinemática del boss congela Time.timeScale.
+            yield return Slide(_hiddenPos, _restPos, slideDuration);   // entra deslizando
 
+            float shown = 0f;
+            while (shown < bannerDuration) { shown += Time.unscaledDeltaTime; yield return null; }
+
+            yield return Slide(_restPos, _hiddenPos, slideDuration);   // sale deslizando
+
+            _vp.Stop();
             _group.alpha = 0f;
-            yield return new WaitForSecondsRealtime(0.3f);
+            yield return new WaitForSecondsRealtime(0.1f);
         }
         _playing = false;
+    }
+
+    // Mueve el banner entre dos posiciones (unscaled, con suavizado).
+    private IEnumerator Slide(Vector2 from, Vector2 to, float duration)
+    {
+        float t = 0f;
+        while (t < duration)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.SmoothStep(0f, 1f, duration > 0f ? Mathf.Clamp01(t / duration) : 1f);
+            _bannerRT.anchoredPosition = Vector2.Lerp(from, to, p);
+            yield return null;
+        }
+        _bannerRT.anchoredPosition = to;
     }
 
     private void OnVideoEnd(VideoPlayer vp) => _videoFinished = true;
