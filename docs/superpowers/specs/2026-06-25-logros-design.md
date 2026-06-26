@@ -18,7 +18,7 @@ Sistema de logros que:
 | `ControlDePlagas` | Control de plagas | Matar 10 arañas en Mercadito | `LOGRO_arañas.png` | `logro_arañas.mov` |
 | `SepultureroEnRacha` | Sepulturero en racha | Matar 15 esqueletos en Mercadito | `LOGRO_esqueleto.png` | `logro_esqueletos.mov` |
 | `UnOsoWacho` | Un oso wacho | Llegar al jefe del stage (cinemática del boss) | `LOGRO_oso.png` | `logro_oso.mov` |
-| `ElFamosoEasterEgg` | El famoso easter egg | Descubrir el objeto secreto en Mercadito | `LOGRO_easteregg.png` | `logro_easteregg.mov` |
+| `ElFamosoEasterEgg` | El famoso easter egg | Entrar al edificio del supermercado en Mercadito | `LOGRO_easteregg.png` | `logro_easteregg.mov` |
 | `AxelElCapo` | Axel el capo | Terminar Mercadito sin recibir daño (no-hit) | `LOGRO_axel.png` | `logro_axel.mov` |
 
 > Nota clave: cada `LOGRO_*.png` ya trae avatar + nombre + descripción horneados en la imagen.
@@ -58,11 +58,13 @@ para que el manager y la UI tengan una sola fuente de verdad y orden de grilla.
   - `bool IsUnlocked(AchievementId id)`
   - `void Unlock(AchievementId id)` — si ya estaba, no hace nada; si es nuevo, marca,
     persiste y dispara `OnUnlocked(AchievementDefinition)`.
-  - `void AddSpiderKill()` / `void AddSkeletonKill()` — incrementan contador, persisten,
-    y disparan el `Unlock` correspondiente al llegar al umbral (10 / 15).
+  - `void AddSpiderKill()` / `void AddSkeletonKill()` — incrementan contador, y disparan el
+    `Unlock` correspondiente al llegar al umbral (10 / 15).
+  - `void ResetRunCounters()` — pone en 0 los contadores; se llama al empezar cada partida/nivel.
 - `event Action<AchievementDefinition> OnUnlocked` — lo escucha el banner.
-- Contadores de arañas/esqueletos son **acumulativos del perfil** salvo que se decida
-  reiniciarlos por partida (ver "Decisión abierta" abajo). Por defecto: acumulativos.
+- Contadores de arañas/esqueletos son **por partida**: arrancan en 0 al empezar el nivel
+  (`ResetRunCounters()`) y NO se persisten en `achievements.json`. El logro se desbloquea solo
+  si llegás al umbral dentro de una misma corrida. Lo único que persiste es el logro desbloqueado.
 
 ### `AchievementTriggers` (MonoBehaviour, en cada escena de nivel)
 Traduce eventos del juego a llamadas al manager. Engancha en `OnEnable`, desengancha en `OnDisable`:
@@ -78,9 +80,8 @@ Traduce eventos del juego a llamadas al manager. Engancha en `OnEnable`, desenga
 - **Axel el capo (no-hit)**: marcar una bandera `tookDamage` cuando `PlayerHealth.TakeDamage`
   se llama durante el nivel; al completar el stage (victoria), si `!tookDamage` → `Unlock(AxelElCapo)`.
   Engancha en el evento/flujo de victoria existente (`VictoryScreen` / `BossDefeatPortal`).
-- **El famoso easter egg**: trigger nuevo en Mercadito. Reusar `InteractionStation` (o un
-  collider `OnTriggerEnter` del jugador) en el objeto secreto → `Unlock(ElFamosoEasterEgg)`.
-  **A definir con el usuario**: qué objeto y dónde (ver "Decisión abierta").
+- **El famoso easter egg**: collider trigger (`OnTriggerEnter`) en la entrada del edificio
+  del supermercado en Mercadito → `Unlock(ElFamosoEasterEgg)`. Una sola vez (one-shot).
 
 ### `AchievementBanner` (prefab + script, in-game)
 - Canvas overlay propio (o se suma al HUD), oculto por defecto.
@@ -124,7 +125,7 @@ Extras (lobby) ──► AchievementsPanelUI ──► AchievementManager.IsUnlo
 
 - Archivo: `Application.persistentDataPath/achievements.json`.
 - Independiente de los slots de `SaveManager` (los logros son del perfil, no de la partida).
-- Contenido: `{ unlocked: [ids...], spidersKilled: int, skeletonsKilled: int }`.
+- Contenido: `{ unlocked: [ids...] }`. Los contadores de kills NO se guardan (son por partida).
 
 ## Orden de implementación
 
@@ -136,11 +137,11 @@ Extras (lobby) ──► AchievementsPanelUI ──► AchievementManager.IsUnlo
 4. **Banner in-game**: prefab con `VideoPlayer` + cola, suscrito a `OnUnlocked`.
 5. **Popup de Extras**: grilla 2×3 scrolleable sobre el contenedor + estado bloqueado/gris.
 
-## Decisiones abiertas (a confirmar con el usuario antes/durante implementación)
+## A verificar en implementación
 
-1. **Easter egg**: qué objeto secreto es y dónde se coloca en Mercadito (¿ya existe en escena
-   o hay que crearlo?). Se reusa `InteractionStation` o un collider trigger.
-2. **Contadores de kills**: ¿acumulativos del perfil (default) o por partida? Default elegido:
-   acumulativos, porque el logro es "derrota a 10 arañas en Mercadito" sin exigir que sea en una
-   sola corrida. Si se quiere "en una sola partida", se reinicia el contador al empezar nivel.
+1. **Easter egg**: ubicar el collider en la entrada del edificio del supermercado en la escena
+   Nivel01 (confirmar el GameObject/zona exacta al implementar).
+2. **Tipo de enemigo**: confirmar que arañas y esqueletos mueren vía `EnemyHealth.OnAnyEnemyDied`
+   con un `EnemyData.displayName` identificable; si las arañas usan `SpiderAI` sin `EnemyHealth`,
+   enganchar su muerte aparte.
 ```
