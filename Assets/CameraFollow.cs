@@ -21,50 +21,112 @@ public class CameraFollow : MonoBehaviour
     public float collisionOffset = 0.5f;
     public LayerMask collisionLayers;
 
+    [Header("Encuadre fijo")]
+    [Tooltip("Si esta activo, la camara NO sigue al jugador: queda fija en su posicion/rotacion " +
+             "actual de la escena, enmarcando todo el cuarto. Usado en el lobby.")]
+    public bool staticFraming = false;
+
+    [Header("Orbit anti-pared")]
+    [Tooltip("Si una pared taparia la vista, la camara ORBITA alrededor del jugador (gira el yaw) " +
+             "hasta encontrar un angulo libre, en vez de acercarse. Mantiene la distancia. " +
+             "OJO: la rotacion puede marear en cuartos chicos; preferir clampToRoom.")]
+    public bool orbitAroundObstacles = false;
+    [Tooltip("Velocidad (grados/seg) con la que gira hacia el angulo libre.")]
+    public float yawTurnSpeed = 120f;
+
+    [Header("Clamp al cuarto (sin rotar)")]
+    [Tooltip("Mantiene la camara dentro de los limites del cuarto (en X/Z) para que no atraviese " +
+             "paredes ni se vea el exterior, SIN rotar. Cerca de una pared la vista se ajusta sola. " +
+             "Pensado para usar con un pitch alto (picado) en el lobby.")]
+    public bool clampToRoom = false;
+    [Tooltip("Limite minimo (x,z) donde puede estar la camara.")]
+    public Vector2 roomMin = new Vector2(-34f, -46f);
+    [Tooltip("Limite maximo (x,z) donde puede estar la camara.")]
+    public Vector2 roomMax = new Vector2(12f, -1f);
+
+    // Yaw actual (puede diferir de yawAngle cuando esta orbitando para esquivar una pared).
+    private float _currentYaw;
+    private bool _yawInit;
+
     void LateUpdate()
     {
+        if (staticFraming) return;   // camara fija: se queda donde la dejo la escena
         if (target == null) return;
 
         // Punto al que mira la camara: el jugador, un poco por encima del piso.
         Vector3 focusPoint = target.position + Vector3.up * focusHeight;
 
-        // El angulo define hacia donde mira; la posicion se deriva de ahi para
-        // que el jugador SIEMPRE quede centrado.
-        Quaternion rotation = Quaternion.Euler(pitchAngle, yawAngle, 0f);
-        Vector3 back = rotation * Vector3.back;
+        if (!_yawInit) { _currentYaw = yawAngle; _yawInit = true; }
 
+        // Buscar el yaw libre mas cercano y girar suave hacia el (orbitar la pared).
+        float targetYaw = orbitAroundObstacles ? FindClearYaw(focusPoint) : yawAngle;
+        _currentYaw = Mathf.MoveTowardsAngle(_currentYaw, targetYaw, yawTurnSpeed * Time.deltaTime);
+
+        Quaternion rotation = Quaternion.Euler(pitchAngle, _currentYaw, 0f);
+        Vector3 back = rotation * Vector3.back;
         Vector3 desiredPosition = focusPoint + back * distance;
 
-        // Buscar obstaculos entre el jugador y la camara, ignorando al propio
-        // jugador (y sus hijos) para que la camara no se pegue sobre el target.
-        RaycastHit[] hits = Physics.RaycastAll(
-            focusPoint,
-            back,
-            distance,
-            collisionLayers,
-            QueryTriggerInteraction.Ignore);
-
-        foreach (var h in hits)
+        if (clampToRoom)
         {
-            if (h.collider.transform == target ||
-                h.collider.transform.IsChildOf(target))
-                continue;
-
-            if (h.distance < distance)
-            {
-                desiredPosition = h.point - back * collisionOffset;
-                break;
-            }
+            // Solo limitamos X/Z (NO la altura): cerca de una pared la camara queda
+            // arriba y cerca, y al mirar siempre a Emilio se inclina sola en picado.
+            // No atraviesa paredes ni muestra el exterior, y NO rota en compas (no marea).
+            desiredPosition.x = Mathf.Clamp(desiredPosition.x, roomMin.x, roomMax.x);
+            desiredPosition.z = Mathf.Clamp(desiredPosition.z, roomMin.y, roomMax.y);
+            transform.position = Vector3.Lerp(transform.position, desiredPosition, followSpeed * Time.deltaTime);
+            transform.rotation = Quaternion.LookRotation(focusPoint - transform.position);
         }
+        else
+        {
+            // Red de seguridad: si quedara tapada, acerca la camara para no atravesar la pared.
+            bool blocked = false;
+            if (Physics.SphereCast(
+                    focusPoint, collisionOffset, back,
+                    out RaycastHit nearest, distance, collisionLayers, QueryTriggerInteraction.Ignore)
+                && nearest.collider.transform != target
+                && !nearest.collider.transform.IsChildOf(target))
+            {
+                desiredPosition = focusPoint + back * Mathf.Max(nearest.distance, 0f);
+                blocked = true;
+            }
 
-        transform.position = Vector3.Lerp(
-            transform.position,
-            desiredPosition,
-            followSpeed * Time.deltaTime
-        );
+            if (blocked)
+                transform.position = desiredPosition;
+            else
+                transform.position = Vector3.Lerp(transform.position, desiredPosition, followSpeed * Time.deltaTime);
 
-        // La camara mira al jugador con el angulo configurado.
-        transform.rotation = rotation;
+            transform.rotation = rotation;
+        }
+    }
+
+    // Devuelve el yaw libre mas cercano a yawAngle. Prueba el yaw base y luego
+    // desvios crecientes a ambos lados, con histeresis hacia el lado donde ya
+    // esta orbitando para evitar que la camara oscile.
+    private float FindClearYaw(Vector3 focusPoint)
+    {
+        if (!IsYawBlocked(focusPoint, yawAngle)) return yawAngle;
+
+        int preferred = Mathf.DeltaAngle(yawAngle, _currentYaw) >= 0f ? 1 : -1;
+        for (int step = 1; step <= 18; step++)
+        {
+            float off = step * 10f;
+            if (!IsYawBlocked(focusPoint, yawAngle + preferred * off)) return yawAngle + preferred * off;
+            if (!IsYawBlocked(focusPoint, yawAngle - preferred * off)) return yawAngle - preferred * off;
+        }
+        return _currentYaw; // sin angulo libre: mantiene el actual (la red de seguridad evita el clip)
+    }
+
+    private bool IsYawBlocked(Vector3 focusPoint, float yaw)
+    {
+        Vector3 back = Quaternion.Euler(pitchAngle, yaw, 0f) * Vector3.back;
+        if (Physics.SphereCast(
+                focusPoint, collisionOffset, back,
+                out RaycastHit h, distance, collisionLayers, QueryTriggerInteraction.Ignore))
+        {
+            if (h.collider.transform == target || h.collider.transform.IsChildOf(target)) return false;
+            return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -74,27 +136,24 @@ public class CameraFollow : MonoBehaviour
     /// </summary>
     public void SnapToTarget()
     {
+        if (staticFraming) return;   // en modo fijo no se reposiciona
         if (target == null) return;
 
         Vector3 focusPoint = target.position + Vector3.up * focusHeight;
-        Quaternion rotation = Quaternion.Euler(pitchAngle, yawAngle, 0f);
+
+        _currentYaw = orbitAroundObstacles ? FindClearYaw(focusPoint) : yawAngle;
+        _yawInit = true;
+        Quaternion rotation = Quaternion.Euler(pitchAngle, _currentYaw, 0f);
         Vector3 back = rotation * Vector3.back;
         Vector3 desiredPosition = focusPoint + back * distance;
 
-        RaycastHit[] hits = Physics.RaycastAll(
-            focusPoint, back, distance, collisionLayers, QueryTriggerInteraction.Ignore);
-
-        foreach (var h in hits)
+        if (Physics.SphereCast(
+                focusPoint, collisionOffset, back,
+                out RaycastHit nearest, distance, collisionLayers, QueryTriggerInteraction.Ignore)
+            && nearest.collider.transform != target
+            && !nearest.collider.transform.IsChildOf(target))
         {
-            if (h.collider.transform == target ||
-                h.collider.transform.IsChildOf(target))
-                continue;
-
-            if (h.distance < distance)
-            {
-                desiredPosition = h.point - back * collisionOffset;
-                break;
-            }
+            desiredPosition = focusPoint + back * Mathf.Max(nearest.distance, 0f);
         }
 
         transform.SetPositionAndRotation(desiredPosition, rotation);

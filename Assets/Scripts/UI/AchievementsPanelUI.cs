@@ -13,9 +13,13 @@ public class AchievementsPanelUI : MonoBehaviour
     [SerializeField] private Vector2 spacing  = new Vector2(40f, 30f);
     [SerializeField] private RectOffset padding;   // si queda null se usa default en Build
 
+    [Header("Scroll con stick/flechas")]
+    [SerializeField] private float stickScrollSpeed = 600f;
+
     private Canvas _canvas;
     private CanvasGroup _group;
     private RectTransform _content;
+    private ScrollRect _scroll;
     private bool _open;
     private bool _built;
     private GameObject _firstSelectable;
@@ -55,7 +59,27 @@ public class AchievementsPanelUI : MonoBehaviour
         Gamepad gp = Gamepad.current;
         bool cancel = Input.GetKeyDown(KeyCode.Escape)
                    || (gp != null && (gp.buttonEast.wasPressedThisFrame || gp.startButton.wasPressedThisFrame));
-        if (cancel) Close();
+        if (cancel) { Close(); return; }
+
+        // Scroll con stick izquierdo Y y flechas arriba/abajo
+        if (_scroll == null) return;
+        float axis = 0f;
+        Gamepad gp2 = Gamepad.current;
+        if (gp2 != null) axis = gp2.leftStick.y.ReadValue();
+        if (Mathf.Abs(axis) < 0.1f)
+        {
+            if (Input.GetKey(KeyCode.UpArrow))   axis =  1f;
+            if (Input.GetKey(KeyCode.DownArrow)) axis = -1f;
+        }
+        if (Mathf.Abs(axis) > 0.1f)
+        {
+            float contentHeight = _content.rect.height;
+            float viewportHeight = ((RectTransform)_scroll.viewport).rect.height;
+            float scrollable = contentHeight - viewportHeight;
+            if (scrollable > 0f)
+                _scroll.verticalNormalizedPosition = Mathf.Clamp01(
+                    _scroll.verticalNormalizedPosition + axis * stickScrollSpeed * Time.unscaledDeltaTime / scrollable);
+        }
     }
 
     private void SetVisible(bool v)
@@ -123,7 +147,8 @@ public class AchievementsPanelUI : MonoBehaviour
         vrt.offsetMin = Vector2.zero; vrt.offsetMax = Vector2.zero;
         viewportGo.GetComponent<Image>().color = new Color(0, 0, 0, 0); // invisible, solo para raycast/mask
 
-        var scroll = cont.gameObject.AddComponent<ScrollRect>();
+        _scroll = cont.gameObject.AddComponent<ScrollRect>();
+        var scroll = _scroll;
         scroll.viewport = vrt;
         scroll.horizontal = false;
         scroll.vertical = true;

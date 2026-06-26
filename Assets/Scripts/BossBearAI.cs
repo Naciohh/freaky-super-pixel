@@ -169,9 +169,9 @@ public class BossBearAI : MonoBehaviour
 
     public void Stun(float duration)
     {
-        if (stunCoroutine != null)
-            StopCoroutine(stunCoroutine);
-
+        // Cancela DealDamage en vuelo además del stun anterior.
+        StopAllCoroutines();
+        HasPendingStrike = false;
         stunCoroutine = StartCoroutine(StunRoutine(duration));
     }
 
@@ -181,15 +181,15 @@ public class BossBearAI : MonoBehaviour
         isAttacking = false;
 
         if (anim != null)
-        {
             anim.SetBool("isWalking", false);
-        }
 
         yield return new WaitForSeconds(duration);
 
-        if (this != null)
-            isAIActive = true;
+        if (this == null) yield break;
 
+        // Fuerza cooldown al salir del stun para que no ataque instantáneamente.
+        nextAttackTime = Time.time + data.attackCooldown;
+        isAIActive = true;
         stunCoroutine = null;
     }
 

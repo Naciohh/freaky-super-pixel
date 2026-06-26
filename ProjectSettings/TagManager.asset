@@ -16,8 +16,8 @@ TagManager:
   - MenuCharacter
   - Enemy
   - Ground
-  - 
-  - 
+  - CameraBlocker
+  - CameraOnly
   - 
   - 
   - 

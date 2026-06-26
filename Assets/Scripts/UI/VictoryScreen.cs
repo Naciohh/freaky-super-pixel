@@ -17,6 +17,11 @@ public class VictoryScreen : MonoBehaviour
     public Button nextLevelButton;
     public string nextLevelSceneName = "Nivel 2";
 
+    [Header("Audio")]
+    [Tooltip("Sonido de victoria. Si está vacío se carga desde Resources/Audio/victoria_sound.")]
+    public AudioClip victorySound;
+    private AudioSource victoryAudio;
+
     void OnEnable()
     {
         EnemyHealth.OnAnyEnemyDied += OnEnemyDied;
@@ -54,14 +59,36 @@ public class VictoryScreen : MonoBehaviour
         Time.timeScale = 0f;
         if (panel != null) panel.SetActive(true);
 
+        PlayVictorySound();
+
         if (nextLevelButton != null)
         {
             nextLevelButton.onClick.RemoveAllListeners();
             nextLevelButton.onClick.AddListener(() =>
             {
+                if (victoryAudio != null) victoryAudio.Stop();
                 Time.timeScale = 1f;
                 SceneManager.LoadScene(nextLevelSceneName);
             });
         }
+    }
+
+    private void PlayVictorySound()
+    {
+        if (victorySound == null)
+            victorySound = Resources.Load<AudioClip>("Audio/victoria_sound");
+        if (victorySound == null)
+            return;
+
+        if (victoryAudio == null)
+        {
+            victoryAudio = gameObject.AddComponent<AudioSource>();
+            victoryAudio.playOnAwake = false;
+            victoryAudio.loop = true;          // suena hasta que cambiás de escena (salir)
+            victoryAudio.ignoreListenerPause = true; // suena aunque timeScale = 0
+            victoryAudio.spatialBlend = 0f;    // 2D
+        }
+        victoryAudio.clip = victorySound;
+        victoryAudio.Play();
     }
 }
