@@ -17,8 +17,8 @@ public class AchievementBanner : MonoBehaviour
     private RenderTexture _rt;
 
     [Header("Apariencia (16:9)")]
-    [SerializeField] private Vector2 bannerSize = new Vector2(520f, 293f); // ~16:9
-    [SerializeField] private float topMargin = 60f;        // separación del borde superior
+    [SerializeField] private Vector2 bannerSize = new Vector2(360f, 203f); // ~16:9, más chico
+    [SerializeField] private float topMargin = 16f;        // pegado al borde superior
     [SerializeField] private float bannerDuration = 4f;    // cuánto se queda visible
     [SerializeField] private float slideDuration = 0.35f;  // entrada/salida deslizando
 
