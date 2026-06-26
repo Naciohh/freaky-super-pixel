@@ -9,6 +9,9 @@ public class PlayerHealth : MonoBehaviour
     public int maxHealth = 200;
     public int currentHealth;
 
+    // Se dispara cuando el jugador recibe daño real (>0). Lo usa el sistema de logros (no-hit).
+    public static event System.Action OnPlayerDamaged;
+
     [Tooltip("Segundos que espera tras morir antes de mostrar el Game Over (para que se vea la animacion).")]
     public float gameOverDelay = 1.5f;
 
@@ -72,6 +75,9 @@ public class PlayerHealth : MonoBehaviour
 
         if (currentHealth < 0)
             currentHealth = 0;
+
+        if (damage > 0)
+            OnPlayerDamaged?.Invoke();
 
         if (healthSlider != null)
             healthSlider.value = currentHealth;

@@ -29,6 +29,9 @@ public class BossIntroDirector : MonoBehaviour
 
     private BossController currentBoss;
 
+    // Se dispara cuando arranca la cinemática del boss. Lo usa el logro "Un oso wacho".
+    public static event System.Action OnIntroStarted;
+
     // Ease-out-back: overshoot suave para el "pop" del logo.
     private static float EaseOutBack(float x)
     {
@@ -41,6 +44,7 @@ public class BossIntroDirector : MonoBehaviour
     public void PlayIntro(BossController boss)
     {
         currentBoss = boss;
+        OnIntroStarted?.Invoke();
         StartCoroutine(IntroSequence());
     }
 
