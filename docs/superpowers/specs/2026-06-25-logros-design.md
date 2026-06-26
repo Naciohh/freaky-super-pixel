@@ -18,7 +18,7 @@ Sistema de logros que:
 | `ControlDePlagas` | Control de plagas | Matar 10 arañas en Mercadito | `LOGRO_arañas.png` | `logro_arañas.mov` |
 | `SepultureroEnRacha` | Sepulturero en racha | Matar 15 esqueletos en Mercadito | `LOGRO_esqueleto.png` | `logro_esqueletos.mov` |
 | `UnOsoWacho` | Un oso wacho | Llegar al jefe del stage (cinemática del boss) | `LOGRO_oso.png` | `logro_oso.mov` |
-| `ElFamosoEasterEgg` | El famoso easter egg | Entrar al edificio del supermercado en Mercadito | `LOGRO_easteregg.png` | `logro_easteregg.mov` |
+| `ElFamosoEasterEgg` | El famoso easter egg | **Sin trigger por ahora** (aparece en el popup pero no se desbloquea) | `LOGRO_easteregg.png` | `logro_easteregg.mov` |
 | `AxelElCapo` | Axel el capo | Terminar Mercadito sin recibir daño (no-hit) | `LOGRO_axel.png` | `logro_axel.mov` |
 
 > Nota clave: cada `LOGRO_*.png` ya trae avatar + nombre + descripción horneados en la imagen.
@@ -80,8 +80,9 @@ Traduce eventos del juego a llamadas al manager. Engancha en `OnEnable`, desenga
 - **Axel el capo (no-hit)**: marcar una bandera `tookDamage` cuando `PlayerHealth.TakeDamage`
   se llama durante el nivel; al completar el stage (victoria), si `!tookDamage` → `Unlock(AxelElCapo)`.
   Engancha en el evento/flujo de victoria existente (`VictoryScreen` / `BossDefeatPortal`).
-- **El famoso easter egg**: collider trigger (`OnTriggerEnter`) en la entrada del edificio
-  del supermercado en Mercadito → `Unlock(ElFamosoEasterEgg)`. Una sola vez (one-shot).
+- **El famoso easter egg**: SIN trigger por ahora. La definición existe y la celda aparece en
+  el popup (siempre en estado bloqueado), pero ningún evento llama a `Unlock(ElFamosoEasterEgg)`.
+  Se deja preparado para enganchar un trigger más adelante.
 
 ### `AchievementBanner` (prefab + script, in-game)
 - Canvas overlay propio (o se suma al HUD), oculto por defecto.
